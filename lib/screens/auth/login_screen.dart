@@ -155,6 +155,45 @@ class _LoginScreenState extends State<LoginScreen> {
                         : const Text('Log In'),
                   ),
                 ),
+                const SizedBox(height: 24),
+                
+                // Divider
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey.shade400)),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('OR', style: TextStyle(color: Colors.grey)),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey.shade400)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                
+                // Google Login Button
+                OutlinedButton.icon(
+                  onPressed: authProvider.isLoading 
+                    ? null 
+                    : () async {
+                        bool success = await authProvider.signInWithGoogle();
+                        if (success && mounted) {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(builder: (context) => const HomeScreen()),
+                            (route) => false,
+                          );
+                        }
+                      },
+                  icon: Image.network(
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_\"G\"_logo.svg/1024px-Google_\"G\"_logo.svg.png',
+                    height: 24,
+                  ),
+                  label: const Text('Sign in with Google'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                    side: BorderSide(color: Colors.grey.shade300),
+                  ),
+                ),
               ],
             ),
           ),

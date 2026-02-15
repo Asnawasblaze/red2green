@@ -84,7 +84,7 @@ class _NGORegisterScreenState extends State<NGORegisterScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'NGO verification via NGO Darpan UIN is required. Your account will be pending until verified.',
+                          'NGO verification via NGO Darpan UIN will be implemented soon. You can register without it for now.',
                           style: TextStyle(color: Colors.amber.shade900, fontSize: 12),
                         ),
                       ),
@@ -134,14 +134,8 @@ class _NGORegisterScreenState extends State<NGORegisterScreen> {
                     labelText: 'NGO Darpan UIN',
                     prefixIcon: Icon(Icons.verified_user_outlined),
                     border: OutlineInputBorder(),
-                    helperText: 'Required for official verification',
+                    helperText: 'Verification will be available soon',
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter NGO Darpan UIN';
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: 16),
                 

@@ -1,10 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/models.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -26,6 +28,50 @@ class AuthService {
       return null;
     } catch (e) {
       print('Sign in error: $e');
+      rethrow;
+    }
+  }
+
+  // Sign in with Google
+  Future<UserModel?> signInWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return null;
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      UserCredential result = await _auth.signInWithCredential(credential);
+      User? user = result.user;
+
+      if (user != null) {
+        UserModel? existingUser = await getUserData(user.uid);
+        if (existingUser != null) {
+          return existingUser;
+        }
+
+        // Create new user if first time
+        UserModel newUser = UserModel(
+          uid: user.uid,
+          email: user.email!,
+          displayName: user.displayName ?? 'New User',
+          role: UserRole.public, // Default role
+          createdAt: DateTime.now(),
+          stats: {
+            'reports_count': 0,
+            'events_joined': 0,
+          },
+        );
+
+        await _firestore.collection('users').doc(user.uid).set(newUser.toFirestore());
+        return newUser;
+      }
+      return null;
+    } catch (e) {
+      print('Google sign in error: $e');
       rethrow;
     }
   }
