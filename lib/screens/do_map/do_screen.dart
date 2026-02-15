@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../providers/issue_provider.dart';
 import '../../models/models.dart';
@@ -12,8 +13,8 @@ class DoScreen extends StatefulWidget {
 }
 
 class _DoScreenState extends State<DoScreen> {
-  GoogleMapController? _mapController;
-  Set<Marker> _markers = {};
+  final MapController _mapController = MapController();
+  List<Marker> _markers = [];
 
   @override
   void initState() {
@@ -23,31 +24,70 @@ class _DoScreenState extends State<DoScreen> {
     });
   }
 
-  BitmapDescriptor _getMarkerIcon(IssueStatus status) {
+  // Get marker color based on issue status
+  Color _getMarkerColor(IssueStatus status) {
     switch (status) {
       case IssueStatus.reported:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+        return Colors.red;
       case IssueStatus.claimed:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
+        return Colors.amber;
       case IssueStatus.resolved:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+        return Colors.green;
     }
   }
 
   void _updateMarkers(List<IssueModel> issues) {
     setState(() {
       _markers = issues.map((issue) {
+        // Convert GeoPoint (Firestore) to LatLng (flutter_map)
         return Marker(
-          markerId: MarkerId(issue.id ?? ''),
-          position: LatLng(issue.location.latitude, issue.location.longitude),
-          icon: _getMarkerIcon(issue.status),
-          infoWindow: InfoWindow(
-            title: issue.title,
-            snippet: issue.statusText,
+          point: LatLng(
+            issue.location.latitude, 
+            issue.location.longitude
           ),
+          width: 40,
+          height: 40,
+          child: _buildStatusMarker(_getMarkerColor(issue.status), issue.statusText),
         );
-      }).toSet();
+      }).toList();
     });
+  }
+
+  Widget _buildStatusMarker(Color color, String status) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Icon(
+        _getStatusIcon(status),
+        color: Colors.white,
+        size: 20,
+      ),
+    );
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case 'Reported':
+        return Icons.report_problem;
+      case 'Claimed':
+        return Icons.work;
+      case 'Resolved':
+        return Icons.check_circle;
+      default:
+        return Icons.location_on;
+    }
   }
 
   @override
@@ -64,28 +104,87 @@ class _DoScreenState extends State<DoScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
-            onPressed: () {},
+            onPressed: () {
+              // TODO: Implement filter
+            },
           ),
         ],
       ),
-      body: GoogleMap(
-        initialCameraPosition: const CameraPosition(
-          target: LatLng(28.6139, 77.2090), // Default to Delhi
-          zoom: 12,
-        ),
-        markers: _markers,
-        onMapCreated: (controller) {
-          _mapController = controller;
-        },
-        myLocationEnabled: true,
-        myLocationButtonEnabled: true,
-        mapToolbarEnabled: false,
+      body: Column(
+        children: [
+          // Legend
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: Colors.white,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildLegendItem(Colors.red, 'Reported'),
+                _buildLegendItem(Colors.amber, 'Claimed'),
+                _buildLegendItem(Colors.green, 'Resolved'),
+              ],
+            ),
+          ),
+          
+          // Map
+          Expanded(
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: const LatLng(28.6139, 77.2090), // Default to Delhi
+                initialZoom: 12,
+                onMapReady: () {
+                  if (issueProvider.issues.isNotEmpty) {
+                    _updateMarkers(issueProvider.issues);
+                  }
+                },
+              ),
+              children: [
+                // TomTom Map Tiles - REPLACE WITH YOUR API KEY
+                TileLayer(
+                  urlTemplate: 'https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=mNF5pA1LtosL7VXepBW2H394JeoH8muG',
+                  userAgentPackageName: 'com.example.red2green',
+                ),
+                // Markers layer
+                MarkerLayer(
+                  markers: _markers,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
+        onPressed: () {
+          // TODO: Show list view
+        },
         icon: const Icon(Icons.list),
         label: const Text('View List'),
       ),
+    );
+  }
+
+  Widget _buildLegendItem(Color color, String label) {
+    return Row(
+      children: [
+        Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 2,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
     );
   }
 }
