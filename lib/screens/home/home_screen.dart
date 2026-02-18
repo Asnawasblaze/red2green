@@ -40,6 +40,20 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 32,
+              width: 32,
+            ),
+            const SizedBox(width: 8),
+            const Text('Red2Green'),
+          ],
+        ),
+      ),
       body: IndexedStack(
         index: _currentIndex < 2 ? _currentIndex : _currentIndex - 1,
         children: [

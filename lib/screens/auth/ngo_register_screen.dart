@@ -45,10 +45,10 @@ class _NGORegisterScreenState extends State<NGORegisterScreen> {
       );
       
       if (success && mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
+        // Use pushAndRemoveUntil to clear the entire navigation stack
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
-          (route) => false,
+          (Route<dynamic> route) => false,
         );
       }
     }

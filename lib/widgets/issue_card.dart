@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
 import '../providers/issue_provider.dart';
@@ -76,22 +77,38 @@ class IssueCard extends StatelessWidget {
             ),
           ),
           
-          // Image
-          if (issue.photoUrl.isNotEmpty)
+          // Image with Cloudinary URL
+          if (issue.photoUrl.isNotEmpty && issue.photoUrl != 'placeholder_url')
             Container(
               height: 200,
               width: double.infinity,
               color: Colors.grey[200],
-              child: issue.photoUrl == 'placeholder_url'
-                  ? Center(
-                      child: Icon(Icons.image, size: 48, color: Colors.grey[400]),
-                    )
-                  : Image.network(
-                      issue.photoUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Center(child: Icon(Icons.broken_image, color: Colors.grey[400])),
-                    ),
+              child: CachedNetworkImage(
+                imageUrl: issue.photoUrl,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                errorWidget: (context, url, error) => Center(
+                  child: Icon(Icons.broken_image, color: Colors.grey[400], size: 48),
+                ),
+              ),
+            )
+          else if (issue.photoUrl == 'placeholder_url')
+            Container(
+              height: 200,
+              width: double.infinity,
+              color: Colors.grey[200],
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.image, size: 48, color: Colors.grey[400]),
+                    const SizedBox(height: 8),
+                    Text('No image available', style: TextStyle(color: Colors.grey[600])),
+                  ],
+                ),
+              ),
             ),
           
           // Content

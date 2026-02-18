@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../providers/issue_provider.dart';
 import '../../models/models.dart';
+import 'issue_popup_card.dart';
 
 class DoScreen extends StatefulWidget {
   const DoScreen({Key? key}) : super(key: key);
@@ -42,12 +43,22 @@ class _DoScreenState extends State<DoScreen> {
         // Convert GeoPoint (Firestore) to LatLng (flutter_map)
         return Marker(
           point: LatLng(
-            issue.location.latitude, 
+            issue.location.latitude,
             issue.location.longitude
           ),
           width: 40,
           height: 40,
-          child: _buildStatusMarker(_getMarkerColor(issue.status), issue.statusText),
+          child: GestureDetector(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => IssuePopupCard(issue: issue),
+              );
+            },
+            child: _buildStatusMarker(_getMarkerColor(issue.status), issue.statusText),
+          ),
         );
       }).toList();
     });

@@ -42,10 +42,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       
       if (success && mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
+        // Use pushAndRemoveUntil to clear the entire navigation stack
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
-          (route) => false,
+          (Route<dynamic> route) => false,
         );
       }
     }
@@ -216,10 +216,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     : () async {
                         bool success = await authProvider.signInWithGoogle();
                         if (success && mounted) {
-                          Navigator.pushAndRemoveUntil(
-                            context,
+                          Navigator.of(context).pushAndRemoveUntil(
                             MaterialPageRoute(builder: (context) => const HomeScreen()),
-                            (route) => false,
+                            (Route<dynamic> route) => false,
                           );
                         }
                       },

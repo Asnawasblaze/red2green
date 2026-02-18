@@ -10,7 +10,7 @@
     <application
         android:label="Red2Green"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         
         <!-- Note: Using OpenStreetMap (free, no API key needed) -->
         

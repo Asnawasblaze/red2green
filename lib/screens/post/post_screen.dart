@@ -7,6 +7,7 @@ import '../../models/models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/issue_provider.dart';
 import '../../services/location_service.dart';
+import '../../services/cloudinary_service.dart';
 import '../home/home_screen.dart';
 
 class PostScreen extends StatefulWidget {
@@ -25,11 +26,18 @@ class _PostScreenState extends State<PostScreen> {
   String _severity = 'Medium';
   bool _isAnonymous = false;
   bool _isLoading = false;
+  bool _isUploadingImage = false;
   final LocationService _locationService = LocationService();
+  final CloudinaryService _cloudinaryService = CloudinaryService();
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 1080, // Initial compression
+      maxHeight: 1080,
+      imageQuality: 85,
+    );
     
     if (pickedFile != null) {
       setState(() {
@@ -45,6 +53,24 @@ class _PostScreenState extends State<PostScreen> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final issueProvider = Provider.of<IssueProvider>(context, listen: false);
       
+      // Show uploading message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              ),
+              SizedBox(width: 12),
+              Text('Compressing and uploading image...'),
+            ],
+          ),
+          duration: Duration(seconds: 5),
+        ),
+      );
+      
       // Get location
       final position = await _locationService.getCurrentPosition();
       if (position == null) {
@@ -55,13 +81,29 @@ class _PostScreenState extends State<PostScreen> {
         return;
       }
       
-      // Create issue
+      // Upload image to Cloudinary
+      setState(() => _isUploadingImage = true);
+      final imageUrl = await _cloudinaryService.uploadImage(_imageFile!);
+      setState(() => _isUploadingImage = false);
+      
+      if (imageUrl == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to upload image. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+      
+      // Create issue with Cloudinary URL
       final issue = IssueModel(
         reporterId: authProvider.user!.uid,
         reporterName: _isAnonymous ? 'Anonymous' : authProvider.user!.displayName,
         reporterPhotoUrl: _isAnonymous ? null : authProvider.user!.photoUrl,
         location: GeoPoint(position.latitude, position.longitude),
-        photoUrl: 'placeholder_url', // TODO: Upload image to Cloudinary
+        photoUrl: imageUrl,
         category: _selectedCategory,
         severity: _severity,
         title: _titleController.text.trim(),
@@ -94,8 +136,8 @@ class _PostScreenState extends State<PostScreen> {
         title: const Text('Report Issue'),
         actions: [
           TextButton(
-            onPressed: _isLoading ? null : _submitReport,
-            child: _isLoading
+            onPressed: (_isLoading || _isUploadingImage) ? null : _submitReport,
+            child: (_isLoading || _isUploadingImage)
                 ? const SizedBox(
                     height: 20,
                     width: 20,
@@ -114,7 +156,7 @@ class _PostScreenState extends State<PostScreen> {
             children: [
               // Image Picker
               GestureDetector(
-                onTap: _pickImage,
+                onTap: (_isLoading || _isUploadingImage) ? null : _pickImage,
                 child: Container(
                   width: double.infinity,
                   height: 200,
@@ -138,6 +180,14 @@ class _PostScreenState extends State<PostScreen> {
                         ),
                 ),
               ),
+              if (_imageFile != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Image will be compressed before upload',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                  ),
+                ),
               const SizedBox(height: 24),
               
               // Category Selection
@@ -149,9 +199,11 @@ class _PostScreenState extends State<PostScreen> {
                   return ChoiceChip(
                     label: Text(_getCategoryName(category)),
                     selected: _selectedCategory == category,
-                    onSelected: (selected) {
-                      setState(() => _selectedCategory = category);
-                    },
+                    onSelected: (_isLoading || _isUploadingImage) 
+                        ? null 
+                        : (selected) {
+                            setState(() => _selectedCategory = category);
+                          },
                   );
                 }).toList(),
               ),
@@ -167,15 +219,18 @@ class _PostScreenState extends State<PostScreen> {
                   ButtonSegment(value: 'High', label: Text('High')),
                 ],
                 selected: {_severity},
-                onSelectionChanged: (Set<String> newSelection) {
-                  setState(() => _severity = newSelection.first);
-                },
+                onSelectionChanged: (_isLoading || _isUploadingImage)
+                    ? null
+                    : (Set<String> newSelection) {
+                        setState(() => _severity = newSelection.first);
+                      },
               ),
               const SizedBox(height: 16),
               
               // Title
               TextFormField(
                 controller: _titleController,
+                enabled: !(_isLoading || _isUploadingImage),
                 decoration: const InputDecoration(
                   labelText: 'Title',
                   border: OutlineInputBorder(),
@@ -187,6 +242,7 @@ class _PostScreenState extends State<PostScreen> {
               // Description
               TextFormField(
                 controller: _descriptionController,
+                enabled: !(_isLoading || _isUploadingImage),
                 decoration: const InputDecoration(
                   labelText: 'Description',
                   border: OutlineInputBorder(),
@@ -201,7 +257,9 @@ class _PostScreenState extends State<PostScreen> {
               SwitchListTile(
                 title: const Text('Report Anonymously'),
                 value: _isAnonymous,
-                onChanged: (value) => setState(() => _isAnonymous = value),
+                onChanged: (_isLoading || _isUploadingImage)
+                    ? null
+                    : (value) => setState(() => _isAnonymous = value),
               ),
             ],
           ),
