@@ -19,10 +19,12 @@ nul
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code related
+.vscode/
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
+!.vscode/extensions.json
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -34,16 +36,28 @@ nul
 /build/
 /coverage/
 
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
+# Android related
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/key.properties
+*.keystore
+*.jks
+
+# iOS related
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Runner/GeneratedPluginRegistrant.[mh]
+**/ios/Runner/GeneratedPluginRegistrant.swift
+
+# Sensitive files
+.env
+google-services.json
+GoogleService-Info.plist
 
 # Antigravity Agent
 .agent/
+brain/
+implementation_plan.md
+task.md
+walkthrough.md

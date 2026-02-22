@@ -94,4 +94,17 @@ class IssueProvider extends ChangeNotifier {
       setError(e.toString());
     }
   }
+
+  // Force refresh issues
+  Future<void> refreshIssues() async {
+    try {
+      // Cancel existing stream
+      await _issuesStream?.drain();
+      // Restart listening
+      listenToIssues();
+      notifyListeners();
+    } catch (e) {
+      setError(e.toString());
+    }
+  }
 }

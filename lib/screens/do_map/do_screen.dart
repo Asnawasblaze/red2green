@@ -3,8 +3,11 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../providers/issue_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../models/models.dart';
-import 'issue_popup_card.dart';
+import '../../services/database_service.dart';
+import '../../widgets/event_card_popup.dart';
 
 class DoScreen extends StatefulWidget {
   const DoScreen({Key? key}) : super(key: key);
@@ -15,7 +18,9 @@ class DoScreen extends StatefulWidget {
 
 class _DoScreenState extends State<DoScreen> {
   final MapController _mapController = MapController();
+  final DatabaseService _databaseService = DatabaseService();
   List<Marker> _markers = [];
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -25,7 +30,6 @@ class _DoScreenState extends State<DoScreen> {
     });
   }
 
-  // Get marker color based on issue status
   Color _getMarkerColor(IssueStatus status) {
     switch (status) {
       case IssueStatus.reported:
@@ -40,7 +44,6 @@ class _DoScreenState extends State<DoScreen> {
   void _updateMarkers(List<IssueModel> issues) {
     setState(() {
       _markers = issues.map((issue) {
-        // Convert GeoPoint (Firestore) to LatLng (flutter_map)
         return Marker(
           point: LatLng(
             issue.location.latitude,
@@ -49,19 +52,126 @@ class _DoScreenState extends State<DoScreen> {
           width: 40,
           height: 40,
           child: GestureDetector(
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => IssuePopupCard(issue: issue),
-              );
-            },
+            onTap: () => _showIssuePopup(issue),
             child: _buildStatusMarker(_getMarkerColor(issue.status), issue.statusText),
           ),
         );
       }).toList();
     });
+  }
+
+  void _showIssuePopup(IssueModel issue) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user;
+    final userRole = user?.role ?? UserRole.public;
+    final userId = user?.uid ?? '';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.9,
+        minChildSize: 0.5,
+        expand: false,
+        builder: (context, scrollController) {
+          return EventCardPopup(
+            issue: issue,
+            userRole: userRole,
+            currentUserId: userId,
+            isProcessing: _isProcessing,
+            onClose: () => Navigator.pop(context),
+            onJoinEvent: () => _handleJoinEvent(issue, userId),
+            onClaimEvent: () => _handleClaimEvent(issue, userId, user?.displayName ?? 'NGO'),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _handleClaimEvent(IssueModel issue, String ngoId, String ngoName) async {
+    if (_isProcessing) return;
+    
+    setState(() => _isProcessing = true);
+    Navigator.pop(context);
+    
+    try {
+      final result = await _databaseService.claimIssue(issue.id!, ngoId, ngoName);
+      
+      if (result != null && result['success'] == true) {
+        // Refresh issues list
+        await Provider.of<IssueProvider>(context, listen: false).refreshIssues();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Event claimed successfully! Chat room created.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // TODO: Navigate to chat room or event details
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result?['message'] ?? 'Failed to claim event'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _handleJoinEvent(IssueModel issue, String userId) async {
+    if (_isProcessing) return;
+    if (issue.eventId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This event has not been claimed by an NGO yet.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    
+    setState(() => _isProcessing = true);
+    Navigator.pop(context);
+    
+    try {
+      // Join the event
+      await _databaseService.joinEvent(issue.eventId!, userId);
+      
+      // Add user to chat room
+      await _databaseService.joinChatRoom(issue.eventId!, userId);
+      
+      // Refresh chat provider
+      Provider.of<ChatProvider>(context, listen: false).listenToEvents(userId);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You joined the cleanup event! Check the Message tab for chat.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error joining event: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isProcessing = false);
+    }
   }
 
   Widget _buildStatusMarker(Color color, String status) {
@@ -123,7 +233,6 @@ class _DoScreenState extends State<DoScreen> {
       ),
       body: Column(
         children: [
-          // Legend
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             color: Colors.white,
@@ -137,12 +246,11 @@ class _DoScreenState extends State<DoScreen> {
             ),
           ),
           
-          // Map
           Expanded(
             child: FlutterMap(
               mapController: _mapController,
               options: MapOptions(
-                initialCenter: const LatLng(28.6139, 77.2090), // Default to Delhi
+                initialCenter: const LatLng(28.6139, 77.2090),
                 initialZoom: 12,
                 onMapReady: () {
                   if (issueProvider.issues.isNotEmpty) {
@@ -151,12 +259,10 @@ class _DoScreenState extends State<DoScreen> {
                 },
               ),
               children: [
-                // TomTom Map Tiles - REPLACE WITH YOUR API KEY
                 TileLayer(
                   urlTemplate: 'https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=mNF5pA1LtosL7VXepBW2H394JeoH8muG',
                   userAgentPackageName: 'com.example.red2green',
                 ),
-                // Markers layer
                 MarkerLayer(
                   markers: _markers,
                 ),
@@ -166,9 +272,7 @@ class _DoScreenState extends State<DoScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: Show list view
-        },
+        onPressed: () {},
         icon: const Icon(Icons.list),
         label: const Text('View List'),
       ),
