@@ -28,199 +28,289 @@ class _MessageScreenState extends State<MessageScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Messages'),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // Search chats
-            },
-          ),
-        ],
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('chat_rooms')
-            .where('participants', arrayContains: userId)
-            .orderBy('lastMessageTime', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('Error: ${snapshot.error}'),
-            );
-          }
-
-          final chatRooms = snapshot.data?.docs ?? [];
-
-          if (chatRooms.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.chat_bubble_outline, 
-                       size: 80, 
-                       color: Colors.grey[300]),
-                  const SizedBox(height: 24),
-                  Text(
-                    'No chats yet',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                    child: Text(
-                      'Join a cleanup event or claim an issue to start chatting with volunteers',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey[500],
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      // Navigate to map to find events
-                    },
-                    icon: const Icon(Icons.map),
-                    label: const Text('Find Events'),
-                  ),
-                ],
+      backgroundColor: const Color(0xFFF9FAFB),
+      body: Column(
+        children: [
+          // Teal Header
+          Container(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 12,
+              left: 20,
+              right: 20,
+              bottom: 16,
+            ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF0F766E), Color(0xFF115E59)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-            );
-          }
-
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: chatRooms.length,
-            separatorBuilder: (context, index) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final chatRoomData = chatRooms[index].data() as Map<String, dynamic>;
-              final chatRoomId = chatRooms[index].id;
-              final eventId = chatRoomData['eventId'] ?? '';
-              final ngoName = chatRoomData['ngoName'] ?? 'Unknown';
-              final lastMessage = chatRoomData['lastMessage'] ?? '';
-              final lastMessageTime = (chatRoomData['lastMessageTime'] as Timestamp?)?.toDate();
-              final participants = (chatRoomData['participants'] as List?)?.length ?? 0;
-
-              return Card(
-                elevation: 0,
-                color: Colors.white,
-                margin: const EdgeInsets.only(bottom: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey[200]!),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'My Cleanups',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {},
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.search, color: Colors.white, size: 20),
+                      ),
+                    ),
+                  ],
                 ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16),
-                  leading: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF2ECC71), Color(0xFF27AE60)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.cleaning_services,
-                      color: Colors.white,
-                      size: 28,
-                    ),
+                const SizedBox(height: 14),
+                // Search bar
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  title: Row(
+                  child: Row(
                     children: [
+                      Icon(Icons.search, color: Colors.white.withOpacity(0.6), size: 20),
+                      const SizedBox(width: 10),
                       Expanded(
-                        child: Text(
-                          'Cleanup Event',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                        child: TextField(
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'Search cleanups...',
+                            hintStyle: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (lastMessageTime != null)
-                        Text(
-                          _formatTime(lastMessageTime),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[500],
-                          ),
-                        ),
                     ],
                   ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      Text(
-                        ngoName,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
+                ),
+              ],
+            ),
+          ),
+          
+          // Chat List
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('chat_rooms')
+                  .where('participants', arrayContains: userId)
+                  .orderBy('lastMessageTime', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
+                    ),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+
+                final chatRooms = snapshot.data?.docs ?? [];
+
+                if (chatRooms.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD1FAE5),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Center(
+                            child: Text('💬', style: TextStyle(fontSize: 36)),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(Icons.people, size: 14, color: Colors.grey[500]),
-                          const SizedBox(width: 4),
-                          Text(
-                            '$participants members',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (lastMessage.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          lastMessage,
+                        const SizedBox(height: 20),
+                        const Text(
+                          'No chats yet',
                           style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[600],
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF374151),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 40),
+                          child: Text(
+                            'Join a cleanup event or claim an issue to start chatting with volunteers',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey[500], fontSize: 14, height: 1.5),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: () {},
+                          icon: const Icon(Icons.map_outlined, size: 18),
+                          label: const Text('Find Events'),
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(160, 48),
+                          ),
                         ),
                       ],
-                    ],
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatRoomScreen(
-                          chatRoomId: chatRoomId,
-                          eventId: eventId,
-                          title: 'Cleanup Event',
-                          meetingPoint: chatRoomData['meetingPoint'],
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: chatRooms.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final chatRoomData = chatRooms[index].data() as Map<String, dynamic>;
+                    final chatRoomId = chatRooms[index].id;
+                    final eventId = chatRoomData['eventId'] ?? '';
+                    final ngoName = chatRoomData['ngoName'] ?? 'Unknown';
+                    final lastMessage = chatRoomData['lastMessage'] ?? '';
+                    final lastMessageTime = (chatRoomData['lastMessageTime'] as Timestamp?)?.toDate();
+                    final participants = (chatRoomData['participants'] as List?)?.length ?? 0;
+
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChatRoomScreen(
+                              chatRoomId: chatRoomId,
+                              eventId: eventId,
+                              title: 'Cleanup Event',
+                              meetingPoint: chatRoomData['meetingPoint'],
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD1FAE5),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Center(
+                                child: Text('🌳', style: TextStyle(fontSize: 24)),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          'Cleanup Event',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 15,
+                                            color: Color(0xFF111827),
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFD1FAE5),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: const Text(
+                                          'Active',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Color(0xFF059669),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  if (lastMessage.isNotEmpty)
+                                    Text(
+                                      lastMessage,
+                                      style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      if (lastMessageTime != null) ...[
+                                        Text(
+                                          _formatTime(lastMessageTime),
+                                          style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          width: 3,
+                                          height: 3,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFF9CA3AF),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                      ],
+                                      Text(
+                                        '$participants members',
+                                        style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );
                   },
-                ),
-              );
-            },
-          );
-        },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

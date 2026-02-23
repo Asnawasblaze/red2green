@@ -25,29 +25,86 @@ class _WatchScreenState extends State<WatchScreen> {
     final issueProvider = Provider.of<IssueProvider>(context);
     
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Red2Green'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
-          ),
-        ],
-      ),
+      backgroundColor: const Color(0xFFF9FAFB),
       body: Column(
         children: [
-          // Filter Bar
+          // Teal Header
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 12,
+              left: 20,
+              right: 20,
+              bottom: 16,
+            ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF0F766E), Color(0xFF115E59)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Column(
               children: [
-                _buildFilterChip('All', null, issueProvider),
-                const SizedBox(width: 8),
-                _buildFilterChip('Reported', IssueStatus.reported, issueProvider),
-                const SizedBox(width: 8),
-                _buildFilterChip('Claimed', IssueStatus.claimed, issueProvider),
-                const SizedBox(width: 8),
-                _buildFilterChip('Resolved', IssueStatus.resolved, issueProvider),
+                // Title Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: const BoxDecoration(
+                            color: Colors.white24,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Text('🌱', style: TextStyle(fontSize: 16)),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'Red2Green',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    GestureDetector(
+                      onTap: () {},
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.settings_outlined, color: Colors.white, size: 20),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Filter Chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildFilterChip('Near Me', null, issueProvider, isSpecial: true),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('All Issues', null, issueProvider),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('Reported', IssueStatus.reported, issueProvider),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('Claimed', IssueStatus.claimed, issueProvider),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('Resolved', IssueStatus.resolved, issueProvider),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -55,17 +112,38 @@ class _WatchScreenState extends State<WatchScreen> {
           // Issues List
           Expanded(
             child: issueProvider.isLoading && issueProvider.issues.isEmpty
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
+                    ),
+                  )
                 : issueProvider.issues.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.inbox, size: 64, color: Colors.grey[300]),
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3F4F6),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Icon(Icons.inbox_outlined, size: 40, color: Color(0xFF9CA3AF)),
+                            ),
                             const SizedBox(height: 16),
-                            Text(
+                            const Text(
                               'No issues yet',
-                              style: TextStyle(color: Colors.grey[600]),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF374151),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Be the first to report an issue!',
+                              style: TextStyle(color: Colors.grey[500], fontSize: 14),
                             ),
                           ],
                         ),
@@ -87,17 +165,29 @@ class _WatchScreenState extends State<WatchScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, IssueStatus? status, IssueProvider provider) {
-    final isSelected = provider.statusFilter == status;
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        provider.setStatusFilter(selected ? status : null);
+  Widget _buildFilterChip(String label, IssueStatus? status, IssueProvider provider, {bool isSpecial = false}) {
+    final isSelected = provider.statusFilter == status && !isSpecial;
+    return GestureDetector(
+      onTap: () {
+        if (!isSpecial) {
+          provider.setStatusFilter(isSelected ? null : status);
+        }
       },
-      backgroundColor: Colors.grey[200],
-      selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
-      checkmarkColor: Theme.of(context).primaryColor,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? const Color(0xFF0F766E) : Colors.white,
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
+      ),
     );
   }
 }

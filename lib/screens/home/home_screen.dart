@@ -15,17 +15,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const WatchScreen(),
-    const DoScreen(),
-    const SizedBox(), // Placeholder for POST button
-    const MessageScreen(),
-    const ProfileScreen(),
-  ];
-
   void _onTabTapped(int index) {
     if (index == 2) {
-      // POST button - Navigate to Post Screen
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const PostScreen()),
@@ -40,78 +31,99 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              'assets/images/logo.png',
-              height: 32,
-              width: 32,
-            ),
-            const SizedBox(width: 8),
-            const Text('Red2Green'),
-          ],
-        ),
-      ),
       body: IndexedStack(
         index: _currentIndex < 2 ? _currentIndex : _currentIndex - 1,
-        children: [
-          const WatchScreen(),
-          const DoScreen(),
-          const MessageScreen(),
-          const ProfileScreen(),
+        children: const [
+          WatchScreen(),
+          DoScreen(),
+          MessageScreen(),
+          ProfileScreen(),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-        type: BottomNavigationBarType.fixed,
-        items: [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.visibility_outlined),
-            activeIcon: Icon(Icons.visibility),
-            label: 'Watch',
+      extendBody: true,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, -4),
+            ),
+          ],
+          border: const Border(
+            top: BorderSide(color: Color(0xFFE5E7EB), width: 1),
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            activeIcon: Icon(Icons.map),
-            label: 'Do',
-          ),
-          BottomNavigationBarItem(
-            icon: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context).primaryColor.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(0, Icons.visibility_outlined, Icons.visibility, 'Watch'),
+                _buildNavItem(1, Icons.map_outlined, Icons.map, 'Do'),
+                // Floating + button
+                GestureDetector(
+                  onTap: () => _onTabTapped(2),
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF059669), Color(0xFF10B981)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF059669).withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.add, color: Colors.white, size: 28),
                   ),
-                ],
-              ),
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 28,
+                ),
+                _buildNavItem(3, Icons.chat_bubble_outline, Icons.chat_bubble, 'Message'),
+                _buildNavItem(4, Icons.person_outline, Icons.person, 'Profile'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
+    final isActive = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => _onTabTapped(index),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 60,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isActive ? activeIcon : icon,
+              color: isActive ? const Color(0xFF059669) : const Color(0xFF6B7280),
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                color: isActive ? const Color(0xFF059669) : const Color(0xFF6B7280),
               ),
             ),
-            label: '',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            activeIcon: Icon(Icons.chat_bubble),
-            label: 'Message',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

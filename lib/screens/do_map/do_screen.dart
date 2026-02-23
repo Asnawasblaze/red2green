@@ -33,11 +33,11 @@ class _DoScreenState extends State<DoScreen> {
   Color _getMarkerColor(IssueStatus status) {
     switch (status) {
       case IssueStatus.reported:
-        return Colors.red;
+        return const Color(0xFFEF4444);
       case IssueStatus.claimed:
-        return Colors.amber;
+        return const Color(0xFFF59E0B);
       case IssueStatus.resolved:
-        return Colors.green;
+        return const Color(0xFF059669);
     }
   }
 
@@ -80,7 +80,6 @@ class _DoScreenState extends State<DoScreen> {
             issue: issue,
             userRole: userRole,
             currentUserId: userId,
-            isProcessing: _isProcessing,
             onClose: () => Navigator.pop(context),
             onJoinEvent: () => _handleJoinEvent(issue, userId),
             onClaimEvent: () => _handleClaimEvent(issue, userId, user?.displayName ?? 'NGO'),
@@ -92,30 +91,27 @@ class _DoScreenState extends State<DoScreen> {
 
   Future<void> _handleClaimEvent(IssueModel issue, String ngoId, String ngoName) async {
     if (_isProcessing) return;
-    
     setState(() => _isProcessing = true);
-    Navigator.pop(context);
-    
     try {
       final result = await _databaseService.claimIssue(issue.id!, ngoId, ngoName);
-      
       if (result != null && result['success'] == true) {
-        // Refresh issues list
         await Provider.of<IssueProvider>(context, listen: false).refreshIssues();
-        
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Event claimed successfully! Chat room created.'),
-            backgroundColor: Colors.green,
+            content: const Text('Event claimed successfully! Chat room created.'),
+            backgroundColor: const Color(0xFF059669),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
-        
-        // TODO: Navigate to chat room or event details
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result?['message'] ?? 'Failed to claim event'),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -123,7 +119,9 @@ class _DoScreenState extends State<DoScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     } finally {
@@ -135,38 +133,36 @@ class _DoScreenState extends State<DoScreen> {
     if (_isProcessing) return;
     if (issue.eventId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This event has not been claimed by an NGO yet.'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: const Text('This event has not been claimed by an NGO yet.'),
+          backgroundColor: const Color(0xFFF59E0B),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       return;
     }
-    
     setState(() => _isProcessing = true);
-    Navigator.pop(context);
-    
     try {
-      // Join the event
       await _databaseService.joinEvent(issue.eventId!, userId);
-      
-      // Add user to chat room
       await _databaseService.joinChatRoom(issue.eventId!, userId);
-      
-      // Refresh chat provider
       Provider.of<ChatProvider>(context, listen: false).listenToEvents(userId);
-      
+      Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('You joined the cleanup event! Check the Message tab for chat.'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('You joined the cleanup event! Check the Message tab for chat.'),
+          backgroundColor: const Color(0xFF059669),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error joining event: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     } finally {
@@ -184,8 +180,8 @@ class _DoScreenState extends State<DoScreen> {
         border: Border.all(color: Colors.white, width: 3),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 6,
+            color: color.withOpacity(0.4),
+            blurRadius: 8,
             offset: const Offset(0, 3),
           ),
         ],
@@ -193,7 +189,7 @@ class _DoScreenState extends State<DoScreen> {
       child: Icon(
         _getStatusIcon(status),
         color: Colors.white,
-        size: 20,
+        size: 18,
       ),
     );
   }
@@ -220,85 +216,130 @@ class _DoScreenState extends State<DoScreen> {
     }
     
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Action Map'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Implement filter
-            },
-          ),
-        ],
-      ),
-      body: Column(
+      backgroundColor: const Color(0xFFF9FAFB),
+      body: Stack(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: Colors.white,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildLegendItem(Colors.red, 'Reported'),
-                _buildLegendItem(Colors.amber, 'Claimed'),
-                _buildLegendItem(Colors.green, 'Resolved'),
-              ],
+          // Map
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: const LatLng(28.6139, 77.2090),
+              initialZoom: 12,
+              onMapReady: () {
+                if (issueProvider.issues.isNotEmpty) {
+                  _updateMarkers(issueProvider.issues);
+                }
+              },
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=mNF5pA1LtosL7VXepBW2H394JeoH8muG',
+                userAgentPackageName: 'com.example.red2green',
+              ),
+              MarkerLayer(
+                markers: _markers,
+              ),
+            ],
+          ),
+          
+          // Header overlay
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 8,
+                left: 16,
+                right: 16,
+                bottom: 12,
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF0F766E),
+                    const Color(0xFF0F766E).withOpacity(0.9),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Explore Issues',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.navigation_outlined, color: Colors.white, size: 20),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           
-          Expanded(
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: const LatLng(28.6139, 77.2090),
-                initialZoom: 12,
-                onMapReady: () {
-                  if (issueProvider.issues.isNotEmpty) {
-                    _updateMarkers(issueProvider.issues);
-                  }
-                },
+          // Legend card
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 60,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=mNF5pA1LtosL7VXepBW2H394JeoH8muG',
-                  userAgentPackageName: 'com.example.red2green',
-                ),
-                MarkerLayer(
-                  markers: _markers,
-                ),
-              ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLegendItem(const Color(0xFFEF4444), 'Urgent'),
+                  const SizedBox(height: 8),
+                  _buildLegendItem(const Color(0xFFF59E0B), 'Claimed'),
+                  const SizedBox(height: 8),
+                  _buildLegendItem(const Color(0xFF059669), 'Resolved'),
+                ],
+              ),
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
-        icon: const Icon(Icons.list),
-        label: const Text('View List'),
       ),
     );
   }
 
   Widget _buildLegendItem(Color color, String label) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 16,
-          height: 16,
+          width: 12,
+          height: 12,
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 2,
-              ),
-            ],
           ),
         ),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 12)),
+        const SizedBox(width: 8),
+        Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF374151))),
       ],
     );
   }

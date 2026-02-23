@@ -9,7 +9,6 @@ class EventCardPopup extends StatelessWidget {
   final VoidCallback onClose;
   final VoidCallback? onJoinEvent;
   final VoidCallback? onClaimEvent;
-  final bool isProcessing;
 
   const EventCardPopup({
     Key? key,
@@ -19,11 +18,14 @@ class EventCardPopup extends StatelessWidget {
     required this.onClose,
     this.onJoinEvent,
     this.onClaimEvent,
-    this.isProcessing = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final buttonText = _getButtonText();
+    final buttonColor = _getButtonColor();
+    final isEnabled = _isButtonEnabled();
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -185,28 +187,22 @@ class EventCardPopup extends StatelessWidget {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: isProcessing ? null : _getButtonAction(),
+                      onPressed: isEnabled ? _getButtonAction() : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _getButtonColor(),
-                        foregroundColor: _getButtonTextColor(),
+                        backgroundColor: buttonColor,
+                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         disabledBackgroundColor: Colors.grey[300],
                       ),
-                      child: isProcessing
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(
-                              _getButtonText(),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                      child: Text(
+                        buttonText,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -283,17 +279,19 @@ class EventCardPopup extends StatelessWidget {
     );
   }
 
+  bool _isButtonEnabled() {
+    if (userRole == UserRole.ngo) {
+      return issue.status == IssueStatus.reported;
+    } else {
+      return issue.status == IssueStatus.claimed;
+    }
+  }
+
   VoidCallback? _getButtonAction() {
     if (userRole == UserRole.ngo) {
-      if (issue.status == IssueStatus.reported) {
-        return onClaimEvent;
-      }
-      return null;
+      return onClaimEvent;
     } else {
-      if (issue.status == IssueStatus.claimed) {
-        return onJoinEvent;
-      }
-      return null;
+      return onJoinEvent;
     }
   }
 
@@ -305,10 +303,6 @@ class EventCardPopup extends StatelessWidget {
       return const Color(0xFF2ECC71);
     }
     return Colors.grey;
-  }
-
-  Color _getButtonTextColor() {
-    return Colors.white;
   }
 
   String _getButtonText() {

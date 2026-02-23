@@ -52,7 +52,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       await _databaseService.sendMessage(widget.chatRoomId, message);
       _messageController.clear();
       
-      // Scroll to bottom
       Future.delayed(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -64,7 +63,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error sending message: $e')),
+        SnackBar(
+          content: Text('Error sending message: $e'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -74,81 +77,144 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2ECC71),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('chat_rooms')
-                  .doc(widget.chatRoomId)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Text(
-                    'Loading...',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                  );
-                }
-                
-                final data = snapshot.data?.data() as Map<String, dynamic>?;
-                final participants = (data?['participants'] as List?)?.length ?? 0;
-                
-                return Text(
-                  '$participants members',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                );
-              },
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline, color: Colors.white),
-            onPressed: () {
-              // Show event info
-            },
-          ),
-        ],
-      ),
+      backgroundColor: const Color(0xFFF9FAFB),
       body: Column(
         children: [
+          // Header
+          Container(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 8,
+              left: 16,
+              right: 16,
+              bottom: 14,
+            ),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF0F766E), Color(0xFF115E59)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Text('🌳', style: TextStyle(fontSize: 20)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('chat_rooms')
+                            .doc(widget.chatRoomId)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return Text('Loading...', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12));
+                          }
+                          final data = snapshot.data?.data() as Map<String, dynamic>?;
+                          final participants = (data?['participants'] as List?)?.length ?? 0;
+                          return Text(
+                            '$participants members · Active',
+                            style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.info_outline, color: Colors.white, size: 20),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
           // Meeting Point Banner
           if (widget.meetingPoint != null && widget.meetingPoint!.isNotEmpty)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: const Color(0xFFFFF8E1),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFEF3C7),
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFFDE68A), width: 1),
+                ),
+              ),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.push_pin,
-                    color: Color(0xFFFF9800),
-                    size: 20,
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFDE68A),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.push_pin, color: Color(0xFFD97706), size: 16),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      'Meeting Point: ${widget.meetingPoint}',
-                      style: const TextStyle(
-                        color: Color(0xFF795548),
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Meeting Point',
+                          style: TextStyle(
+                            color: Color(0xFFD97706),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.meetingPoint!,
+                          style: TextStyle(
+                            color: Colors.amber[900],
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -161,55 +227,63 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               stream: _databaseService.getChatMessagesStream(widget.chatRoomId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text('Error: ${snapshot.error}'),
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
+                    ),
                   );
                 }
-
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
                 final messages = snapshot.data ?? [];
-
                 if (messages.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.chat_bubble_outline, 
-                             size: 64, 
-                             color: Colors.grey[300]),
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD1FAE5),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Center(
+                            child: Text('💬', style: TextStyle(fontSize: 28)),
+                          ),
+                        ),
                         const SizedBox(height: 16),
-                        Text(
+                        const Text(
                           'No messages yet',
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF374151),
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Start the conversation!',
-                          style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                          style: TextStyle(color: Colors.grey[500], fontSize: 13),
                         ),
                       ],
                     ),
                   );
                 }
-
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
-                    final isMe = message.senderId == 'current_user_id'; // TODO: Get actual user ID
-                    final isNGO = message.senderId == 'ngo_id'; // TODO: Check if sender is NGO
-                    
+                    final isMe = message.senderId == 'current_user_id';
+                    final isNGO = message.senderId == 'ngo_id';
                     return ChatBubble(
                       message: message,
                       isMe: isMe,
                       isNGO: isNGO,
-                      showAvatar: index == 0 || 
-                          messages[index - 1].senderId != message.senderId,
+                      showAvatar: index == 0 || messages[index - 1].senderId != message.senderId,
                     );
                   },
                 );
@@ -219,39 +293,49 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           
           // Message Input
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, -4),
                 ),
               ],
             ),
             child: SafeArea(
               child: Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.attach_file, color: Colors.grey),
-                    onPressed: () {
-                      // TODO: Attach file/image
-                    },
+                  GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.photo_camera_outlined, color: Color(0xFF6B7280), size: 20),
+                    ),
                   ),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
+                        color: const Color(0xFFF3F4F6),
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: TextField(
                         controller: _messageController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Type a message...',
+                          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(vertical: 12),
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         maxLines: null,
                         textInputAction: TextInputAction.send,
@@ -259,38 +343,41 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   GestureDetector(
-                    onTap: _isLoading 
-                        ? null 
+                    onTap: _isLoading
+                        ? null
                         : () => _sendMessage('user_id', 'User Name'),
                     child: Container(
-                      padding: const EdgeInsets.all(12),
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2ECC71),
-                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF059669), Color(0xFF10B981)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2ECC71).withOpacity(0.3),
+                            color: const Color(0xFF059669).withOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
                         ],
                       ),
                       child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ? const Center(
+                              child: SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
                               ),
                             )
-                          : const Icon(
-                              Icons.send,
-                              color: Colors.white,
-                              size: 20,
-                            ),
+                          : const Icon(Icons.send, color: Colors.white, size: 20),
                     ),
                   ),
                 ],
