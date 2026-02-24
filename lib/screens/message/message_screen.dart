@@ -111,7 +111,6 @@ class _MessageScreenState extends State<MessageScreen> {
               stream: FirebaseFirestore.instance
                   .collection('chat_rooms')
                   .where('participants', arrayContains: userId)
-                  .orderBy('lastMessageTime', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
