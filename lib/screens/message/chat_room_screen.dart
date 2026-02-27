@@ -9,6 +9,7 @@ import '../../services/database_service.dart';
 import '../../widgets/chat_bubble.dart';
 import '../../providers/auth_provider.dart';
 import '../resolve/resolve_issue_screen.dart';
+import 'chat_settings_screen.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   final String chatRoomId;
@@ -57,56 +58,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Widget _buildActionButton() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final currentUser = authProvider.user;
-    
-    final bool isNgo = currentUser?.role == UserRole.ngo;
-    final bool isOwner = widget.ngoId != null && currentUser?.uid == widget.ngoId;
-    final bool canResolve = isNgo && isOwner && _issue != null && _issue!.status != IssueStatus.resolved;
-    
-    if (canResolve) {
-      return GestureDetector(
-        onTap: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ResolveIssueScreen(
-                issue: _issue!,
-                ngoId: currentUser!.uid,
-              ),
-            ),
-          );
-          if (result == true) {
-            _loadIssue();
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.check_circle_outline, color: Color(0xFF059669), size: 18),
-              SizedBox(width: 4),
-              Text(
-                'Resolved',
-                style: TextStyle(
-                  color: Color(0xFF059669),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    
     return GestureDetector(
-      onTap: () {},
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatSettingsScreen(
+              chatRoomId: widget.chatRoomId,
+              currentTitle: widget.title,
+              issueId: widget.issueId,
+              ngoId: widget.ngoId,
+            ),
+          ),
+        );
+      },
       child: Container(
         width: 36,
         height: 36,
@@ -114,7 +79,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           color: Colors.white.withOpacity(0.15),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: const Icon(Icons.info_outline, color: Colors.white, size: 20),
+        child: const Icon(Icons.more_vert, color: Colors.white, size: 20),
       ),
     );
   }
@@ -352,16 +317,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 }
                 return ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
-                    final isMe = message.senderId == 'current_user_id';
-                    final isNGO = message.senderId == 'ngo_id';
+                    final isMe = message.senderId == Provider.of<AuthProvider>(context, listen: false).user?.uid || message.senderId == 'system';
                     return ChatBubble(
                       message: message,
-                      isMe: isMe,
-                      isNGO: isNGO,
+                      currentUserId: Provider.of<AuthProvider>(context, listen: false).user?.uid ?? '',
+                      ngoId: widget.ngoId,
                       showAvatar: index == 0 || messages[index - 1].senderId != message.senderId,
                     );
                   },

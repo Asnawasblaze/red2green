@@ -187,6 +187,7 @@ class _MessageScreenState extends State<MessageScreen> {
                     final lastMessage = chatRoomData['lastMessage'] ?? '';
                     final lastMessageTime = (chatRoomData['lastMessageTime'] as Timestamp?)?.toDate();
                     final participants = (chatRoomData['participants'] as List?)?.length ?? 0;
+                    final issueId = chatRoomData['issueId'] as String?;
 
                     return GestureDetector(
                       onTap: () {
@@ -196,16 +197,15 @@ class _MessageScreenState extends State<MessageScreen> {
                             builder: (context) => ChatRoomScreen(
                               chatRoomId: chatRoomId,
                               eventId: eventId,
-                              title: 'Cleanup Event',
+                              title: chatRoomData['title'] ?? 'Cleanup Event',
                               meetingPoint: chatRoomData['meetingPoint'],
-                              issueId: chatRoomData['issueId'],
+                              issueId: issueId,
                               ngoId: chatRoomData['ngoId'],
                             ),
                           ),
                         );
                       },
                       child: Container(
-                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
@@ -217,87 +217,186 @@ class _MessageScreenState extends State<MessageScreen> {
                             ),
                           ],
                         ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              width: 52,
-                              height: 52,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFD1FAE5),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Center(
-                                child: Text('🌳', style: TextStyle(fontSize: 24)),
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          'Cleanup Event',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 15,
-                                            color: Color(0xFF111827),
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                            // Issue Details Header
+                            if (issueId != null)
+                              FutureBuilder(
+                                future: _databaseService.getIssueById(issueId),
+                                builder: (context, snapshot) {
+                                  if (!snapshot.hasData || snapshot.data == null) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  
+                                  final issue = snapshot.data!;
+                                  return Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF0FDF4),
+                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: const Color(0xFF059669).withOpacity(0.1),
                                         ),
                                       ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFD1FAE5),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: const Text(
-                                          'Active',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: Color(0xFF059669),
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  if (lastMessage.isNotEmpty)
-                                    Text(
-                                      lastMessage,
-                                      style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      if (lastMessageTime != null) ...[
-                                        Text(
-                                          _formatTime(lastMessageTime),
-                                          style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          width: 3,
-                                          height: 3,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFF9CA3AF),
-                                            shape: BoxShape.circle,
+                                    child: Row(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Image.network(
+                                            issue.photoUrl,
+                                            width: 44,
+                                            height: 44,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) => Container(
+                                              width: 44,
+                                              height: 44,
+                                              color: const Color(0xFFF3F4F6),
+                                              child: const Icon(Icons.image, color: Color(0xFF9CA3AF), size: 20),
+                                            ),
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                issue.title,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13,
+                                                  color: Color(0xFF111827),
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Row(
+                                                children: [
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: _getStatusColor(issue.status).withOpacity(0.1),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                    ),
+                                                    child: Text(
+                                                      issue.statusText,
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: _getStatusColor(issue.status),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    issue.categoryText,
+                                                    style: const TextStyle(
+                                                      fontSize: 10,
+                                                      color: Color(0xFF6B7280),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ],
-                                      Text(
-                                        '$participants members',
-                                        style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                                    ),
+                                  );
+                                },
+                              ),
+                            
+                            // Chat Info
+                            Padding(
+                              padding: EdgeInsets.all(issueId != null ? 12 : 16),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFD1FAE5),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        ngoName.isNotEmpty ? ngoName[0].toUpperCase() : 'E',
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF059669),
+                                        ),
                                       ),
-                                    ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                chatRoomData['title'] ?? 'Cleanup Event',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                  color: Color(0xFF111827),
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            if (lastMessageTime != null)
+                                              Text(
+                                                _formatTime(lastMessageTime),
+                                                style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                                              ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                lastMessage.isNotEmpty 
+                                                    ? lastMessage 
+                                                    : 'No messages yet',
+                                                style: TextStyle(
+                                                  fontSize: 13, 
+                                                  color: lastMessage.isNotEmpty 
+                                                      ? const Color(0xFF6B7280) 
+                                                      : const Color(0xFF9CA3AF),
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF059669).withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                '$participants',
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                  color: Color(0xFF059669),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
@@ -326,6 +425,19 @@ class _MessageScreenState extends State<MessageScreen> {
       return 'Yesterday';
     } else {
       return '${date.day}/${date.month}';
+    }
+  }
+
+  Color _getStatusColor(dynamic status) {
+    switch (status.toString()) {
+      case 'IssueStatus.reported':
+        return const Color(0xFFEF4444);
+      case 'IssueStatus.claimed':
+        return const Color(0xFFF59E0B);
+      case 'IssueStatus.resolved':
+        return const Color(0xFF059669);
+      default:
+        return Colors.grey;
     }
   }
 }

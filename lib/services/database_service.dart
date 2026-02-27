@@ -326,4 +326,16 @@ class DatabaseService {
       return null;
     }
   }
+
+  // Update chat room title
+  Future<void> updateChatRoomTitle(String chatRoomId, String title) async {
+    try {
+      await chatRoomsCollection.doc(chatRoomId).update({
+        'title': title,
+      });
+    } catch (e) {
+      print('Update chat room title error: $e');
+      rethrow;
+    }
+  }
 }
