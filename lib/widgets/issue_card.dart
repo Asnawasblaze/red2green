@@ -194,10 +194,10 @@ class IssueCard extends StatelessWidget {
               onTap: () => _showImageFullScreen(context),
               child: Stack(
                 children: [
-                  // Full width image with 4:3 aspect ratio (Instagram-style tall)
+                  // Full width image with 4:5 aspect ratio (Instagram-style tall)
                   ClipRRect(
                     child: AspectRatio(
-                      aspectRatio: 4 / 3,
+                      aspectRatio: 4 / 5,
                       child: CachedNetworkImage(
                         imageUrl: issue.photoUrl,
                         fit: BoxFit.cover,
