@@ -30,6 +30,7 @@ class IssueModel {
   final String? eventId;
   final DateTime createdAt;
   final DateTime? resolvedAt;
+  final List<String> resolvedImages;
   final bool isAnonymous;
   final List<String> likes;
   final int commentCount;
@@ -51,6 +52,7 @@ class IssueModel {
     this.eventId,
     required this.createdAt,
     this.resolvedAt,
+    this.resolvedImages = const [],
     this.isAnonymous = false,
     this.likes = const [],
     this.commentCount = 0,
@@ -75,6 +77,7 @@ class IssueModel {
       eventId: data['eventId'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       resolvedAt: (data['resolvedAt'] as Timestamp?)?.toDate(),
+      resolvedImages: List<String>.from(data['resolvedImages'] ?? []),
       isAnonymous: data['isAnonymous'] ?? false,
       likes: List<String>.from(data['likes'] ?? []),
       commentCount: data['commentCount'] ?? 0,
@@ -98,6 +101,7 @@ class IssueModel {
       'eventId': eventId,
       'createdAt': Timestamp.fromDate(createdAt),
       'resolvedAt': resolvedAt != null ? Timestamp.fromDate(resolvedAt!) : null,
+      'resolvedImages': resolvedImages,
       'isAnonymous': isAnonymous,
       'likes': likes,
       'commentCount': commentCount,
@@ -185,6 +189,7 @@ class IssueModel {
     String? eventId,
     DateTime? createdAt,
     DateTime? resolvedAt,
+    List<String>? resolvedImages,
     bool? isAnonymous,
     List<String>? likes,
     int? commentCount,
@@ -206,6 +211,7 @@ class IssueModel {
       eventId: eventId ?? this.eventId,
       createdAt: createdAt ?? this.createdAt,
       resolvedAt: resolvedAt ?? this.resolvedAt,
+      resolvedImages: resolvedImages ?? this.resolvedImages,
       isAnonymous: isAnonymous ?? this.isAnonymous,
       likes: likes ?? this.likes,
       commentCount: commentCount ?? this.commentCount,

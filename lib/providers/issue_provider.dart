@@ -32,10 +32,11 @@ class IssueProvider extends ChangeNotifier {
 
   void setStatusFilter(IssueStatus? status) {
     _statusFilter = status;
-    notifyListeners();
+    refreshIssues();
   }
 
   void listenToIssues() {
+    _issuesStream?.drain();
     _issuesStream = _databaseService.getIssuesStream(statusFilter: _statusFilter);
     _issuesStream?.listen((issues) {
       _issues = issues;
@@ -100,9 +101,10 @@ class IssueProvider extends ChangeNotifier {
     try {
       // Cancel existing stream
       await _issuesStream?.drain();
+      _issues = [];
+      notifyListeners();
       // Restart listening
       listenToIssues();
-      notifyListeners();
     } catch (e) {
       setError(e.toString());
     }

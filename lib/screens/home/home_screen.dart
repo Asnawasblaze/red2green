@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../watch/watch_screen.dart';
 import '../do_map/do_screen.dart';
 import '../post/post_screen.dart';
@@ -14,6 +17,100 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  bool _locationChecked = false;
+  Position? _currentPosition;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLocationPermission();
+  }
+
+  Future<void> _checkLocationPermission() async {
+    if (_locationChecked) return;
+    _locationChecked = true;
+
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) {
+        _showLocationDialog('Location services are disabled. Please enable location services to find issues near you.');
+      }
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        if (mounted) {
+          _showLocationDialog('Location permission denied. You can still report issues but may not see nearby ones.');
+        }
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      if (mounted) {
+        _showLocationDialog('Location permission permanently denied. Please enable in settings to see nearby issues.');
+      }
+      return;
+    }
+
+    // Get current position
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+        });
+      }
+    } catch (e) {
+      print('Error getting location: $e');
+    }
+  }
+
+  void _showLocationDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF059669).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.location_on, color: Color(0xFF059669)),
+            ),
+            const SizedBox(width: 12),
+            const Text('Location', style: TextStyle(fontSize: 18)),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Geolocator.openLocationSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF059669),
+            ),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _onTabTapped(int index) {
     if (index == 2) {
@@ -33,11 +130,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex < 2 ? _currentIndex : _currentIndex - 1,
-        children: const [
-          WatchScreen(),
-          DoScreen(),
-          MessageScreen(),
-          ProfileScreen(),
+        children: [
+          const WatchScreen(),
+          DoScreen(initialPosition: _currentPosition != null 
+              ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude) 
+              : null),
+          const MessageScreen(),
+          const ProfileScreen(),
         ],
       ),
       extendBody: true,

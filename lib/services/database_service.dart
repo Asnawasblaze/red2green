@@ -26,7 +26,7 @@ class DatabaseService {
 
   // Get issues stream (for WATCH feed)
   Stream<List<IssueModel>> getIssuesStream({IssueStatus? statusFilter}) {
-    Query query = issuesCollection.orderBy('createdAt', descending: true);
+    Query query = issuesCollection.orderBy('resolvedAt', descending: true).orderBy('createdAt', descending: true);
     
     if (statusFilter != null) {
       query = query.where('status', isEqualTo: statusFilter.toString().split('.').last);
@@ -62,6 +62,42 @@ class DatabaseService {
     } catch (e) {
       print('Update issue status error: $e');
       rethrow;
+    }
+  }
+
+  // Resolve issue with images (NGO only)
+  Future<Map<String, dynamic>?> resolveIssue(String issueId, String ngoId, List<String> resolvedImages) async {
+    try {
+      final issueDoc = await issuesCollection.doc(issueId).get();
+      if (!issueDoc.exists) {
+        return {'success': false, 'message': 'Issue not found'};
+      }
+      
+      final issueData = issueDoc.data() as Map<String, dynamic>;
+      final claimedByNgoId = issueData['claimedByNgoId'] as String?;
+      
+      // Allow resolution if NGO matches or if no one claimed it yet (for testing)
+      if (claimedByNgoId != null && claimedByNgoId != ngoId) {
+        return {'success': false, 'message': 'Only the NGO that claimed this issue can resolve it'};
+      }
+      
+      final currentStatus = issueData['status'];
+      if (currentStatus == 'resolved') {
+        return {'success': false, 'message': 'This issue is already resolved'};
+      }
+      
+      await issuesCollection.doc(issueId).update({
+        'status': 'resolved',
+        'resolvedAt': Timestamp.fromDate(DateTime.now()),
+        'resolvedImages': resolvedImages,
+        if (claimedByNgoId == null) 'claimedByNgoId': ngoId,
+        if (claimedByNgoId == null) 'claimedByNgoName': 'NGO',
+      });
+      
+      return {'success': true, 'message': 'Issue resolved successfully'};
+    } catch (e) {
+      print('Resolve issue error: $e');
+      return {'success': false, 'message': 'Error resolving issue: $e'};
     }
   }
 

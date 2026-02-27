@@ -32,6 +32,78 @@ class IssueCard extends StatelessWidget {
     }
   }
 
+  void _showImageFullScreen(BuildContext context) {
+    if (issue.photoUrl.isEmpty || issue.photoUrl == 'placeholder_url') return;
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text('Before', style: TextStyle(color: Colors.white)),
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: CachedNetworkImage(
+                imageUrl: issue.photoUrl,
+                fit: BoxFit.contain,
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
+                errorWidget: (context, url, error) => const Icon(
+                  Icons.error,
+                  color: Colors.white,
+                  size: 50,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showResolvedImageFullScreen(BuildContext context, int index) {
+    if (issue.resolvedImages.isEmpty) return;
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: Text('After ${index + 1}/${issue.resolvedImages.length}', style: const TextStyle(color: Colors.white)),
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: CachedNetworkImage(
+                imageUrl: issue.resolvedImages[index],
+                fit: BoxFit.contain,
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
+                errorWidget: (context, url, error) => const Icon(
+                  Icons.error,
+                  color: Colors.white,
+                  size: 50,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -67,7 +139,7 @@ class IssueCard extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      issue.reporterName[0].toUpperCase(),
+                      issue.reporterName.isNotEmpty ? issue.reporterName[0].toUpperCase() : '?',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF059669),
@@ -116,39 +188,111 @@ class IssueCard extends StatelessWidget {
             ),
           ),
           
-          // Image
+          // Large Image - Full width and tall like Instagram
           if (issue.photoUrl.isNotEmpty && issue.photoUrl != 'placeholder_url')
-            ClipRRect(
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: CachedNetworkImage(
-                  imageUrl: issue.photoUrl,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: const Color(0xFFF3F4F6),
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
+            GestureDetector(
+              onTap: () => _showImageFullScreen(context),
+              child: Stack(
+                children: [
+                  // Full width image with 4:3 aspect ratio (Instagram-style tall)
+                  ClipRRect(
+                    child: AspectRatio(
+                      aspectRatio: 4 / 3,
+                      child: CachedNetworkImage(
+                        imageUrl: issue.photoUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: const Color(0xFFF3F4F6),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
+                            ),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: const Color(0xFFF3F4F6),
+                          child: const Center(
+                            child: Icon(Icons.broken_image_outlined, color: Color(0xFF9CA3AF), size: 40),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                  errorWidget: (context, url, error) => Container(
-                    color: const Color(0xFFF3F4F6),
-                    child: const Center(
-                      child: Icon(Icons.broken_image_outlined, color: Color(0xFF9CA3AF), size: 40),
+                  // Expand icon overlay
+                  Positioned(
+                    right: 12,
+                    bottom: 12,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.fullscreen,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
             )
           else if (issue.photoUrl == 'placeholder_url')
             Container(
-              height: 180,
+              height: 200,
               width: double.infinity,
               color: const Color(0xFFF3F4F6),
               child: const Center(
                 child: Icon(Icons.image_outlined, size: 40, color: Color(0xFF9CA3AF)),
+              ),
+            ),
+          
+          // Resolved Images (Instagram-style carousel)
+          if (issue.resolvedImages.isNotEmpty && issue.status == IssueStatus.resolved)
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: issue.resolvedImages.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => _showResolvedImageFullScreen(context, index),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: issue.resolvedImages[index],
+                          width: 100,
+                          height: 84,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            width: 100,
+                            height: 84,
+                            color: const Color(0xFFF3F4F6),
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
+                              ),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            width: 100,
+                            height: 84,
+                            color: const Color(0xFFF3F4F6),
+                            child: const Center(
+                              child: Icon(Icons.broken_image_outlined, color: Color(0xFF9CA3AF), size: 24),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           
@@ -171,9 +315,9 @@ class IssueCard extends StatelessWidget {
                   children: [
                     const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF9CA3AF)),
                     const SizedBox(width: 4),
-                    Text(
+                    const Text(
                       'Reported nearby',
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+                      style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
                     ),
                     const SizedBox(width: 12),
                     Container(

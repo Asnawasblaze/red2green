@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../providers/issue_provider.dart';
@@ -10,7 +11,9 @@ import '../../services/database_service.dart';
 import '../../widgets/event_card_popup.dart';
 
 class DoScreen extends StatefulWidget {
-  const DoScreen({Key? key}) : super(key: key);
+  final LatLng? initialPosition;
+  
+  const DoScreen({Key? key, this.initialPosition}) : super(key: key);
 
   @override
   State<DoScreen> createState() => _DoScreenState();
@@ -21,13 +24,85 @@ class _DoScreenState extends State<DoScreen> {
   final DatabaseService _databaseService = DatabaseService();
   List<Marker> _markers = [];
   bool _isProcessing = false;
+  bool _movedToUserLocation = false;
+  LatLng? _userLocation;
 
   @override
   void initState() {
     super.initState();
+    _userLocation = widget.initialPosition;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<IssueProvider>(context, listen: false).listenToIssues();
     });
+  }
+
+  @override
+  void didUpdateWidget(DoScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // When initialPosition becomes available, move map to user location
+    if (widget.initialPosition != null && 
+        oldWidget.initialPosition == null && 
+        !_movedToUserLocation) {
+      _movedToUserLocation = true;
+      _userLocation = widget.initialPosition;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _mapController.move(widget.initialPosition!, 14);
+      });
+    }
+  }
+
+  Future<void> _centerOnUserLocation() async {
+    try {
+      // Check if we already have the location
+      if (_userLocation != null) {
+        _mapController.move(_userLocation!, 14);
+        return;
+      }
+
+      // Try to get current location
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _showLocationSnackBar('Please enable location services');
+        await Geolocator.openLocationSettings();
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          _showLocationSnackBar('Location permission denied');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        _showLocationSnackBar('Location permission permanently denied. Please enable in settings.');
+        await Geolocator.openAppSettings();
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      
+      setState(() {
+        _userLocation = LatLng(position.latitude, position.longitude);
+      });
+      _mapController.move(_userLocation!, 14);
+    } catch (e) {
+      _showLocationSnackBar('Could not get your location');
+    }
+  }
+
+  void _showLocationSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF0F766E),
+      ),
+    );
   }
 
   Color _getMarkerColor(IssueStatus status) {
@@ -223,7 +298,7 @@ class _DoScreenState extends State<DoScreen> {
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: const LatLng(28.6139, 77.2090),
+              initialCenter: widget.initialPosition ?? const LatLng(28.6139, 77.2090),
               initialZoom: 12,
               onMapReady: () {
                 if (issueProvider.issues.isNotEmpty) {
@@ -276,7 +351,7 @@ class _DoScreenState extends State<DoScreen> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () {},
+                    onTap: _centerOnUserLocation,
                     child: Container(
                       width: 36,
                       height: 36,
@@ -284,7 +359,7 @@ class _DoScreenState extends State<DoScreen> {
                         color: Colors.white.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.navigation_outlined, color: Colors.white, size: 20),
+                      child: const Icon(Icons.my_location, color: Colors.white, size: 20),
                     ),
                   ),
                 ],
@@ -312,7 +387,7 @@ class _DoScreenState extends State<DoScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLegendItem(const Color(0xFFEF4444), 'Urgent'),
+                  _buildLegendItem(const Color(0xFFEF4444), 'Reported'),
                   const SizedBox(height: 8),
                   _buildLegendItem(const Color(0xFFF59E0B), 'Claimed'),
                   const SizedBox(height: 8),

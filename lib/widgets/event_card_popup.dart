@@ -222,7 +222,7 @@ class EventCardPopup extends StatelessWidget {
     switch (issue.status) {
       case IssueStatus.reported:
         bgColor = Colors.red;
-        text = 'Urgent';
+        text = 'Reported';
         icon = Icons.report_problem;
         break;
       case IssueStatus.claimed:

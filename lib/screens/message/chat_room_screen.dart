@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../models/message_model.dart';
+import '../../models/issue_model.dart';
+import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 import '../../widgets/chat_bubble.dart';
+import '../../providers/auth_provider.dart';
+import '../resolve/resolve_issue_screen.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   final String chatRoomId;
   final String eventId;
   final String title;
   final String? meetingPoint;
+  final String? issueId;
+  final String? ngoId;
 
   const ChatRoomScreen({
     Key? key,
@@ -17,6 +24,8 @@ class ChatRoomScreen extends StatefulWidget {
     required this.eventId,
     required this.title,
     this.meetingPoint,
+    this.issueId,
+    this.ngoId,
   }) : super(key: key);
 
   @override
@@ -28,6 +37,87 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
+  IssueModel? _issue;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadIssue();
+  }
+
+  Future<void> _loadIssue() async {
+    if (widget.issueId != null) {
+      final issue = await _databaseService.getIssueById(widget.issueId!);
+      if (mounted) {
+        setState(() {
+          _issue = issue;
+        });
+      }
+    }
+  }
+
+  Widget _buildActionButton() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUser = authProvider.user;
+    
+    final bool isNgo = currentUser?.role == UserRole.ngo;
+    final bool isOwner = widget.ngoId != null && currentUser?.uid == widget.ngoId;
+    final bool canResolve = isNgo && isOwner && _issue != null && _issue!.status != IssueStatus.resolved;
+    
+    if (canResolve) {
+      return GestureDetector(
+        onTap: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ResolveIssueScreen(
+                issue: _issue!,
+                ngoId: currentUser!.uid,
+              ),
+            ),
+          );
+          if (result == true) {
+            _loadIssue();
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle_outline, color: Color(0xFF059669), size: 18),
+              SizedBox(width: 4),
+              Text(
+                'Resolved',
+                style: TextStyle(
+                  color: Color(0xFF059669),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    return GestureDetector(
+      onTap: () {},
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Icon(Icons.info_outline, color: Colors.white, size: 20),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -155,18 +245,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     ],
                   ),
                 ),
-                GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.info_outline, color: Colors.white, size: 20),
-                  ),
-                ),
+                _buildActionButton(),
               ],
             ),
           ),

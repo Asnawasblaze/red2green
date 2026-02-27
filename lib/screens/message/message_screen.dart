@@ -198,6 +198,8 @@ class _MessageScreenState extends State<MessageScreen> {
                               eventId: eventId,
                               title: 'Cleanup Event',
                               meetingPoint: chatRoomData['meetingPoint'],
+                              issueId: chatRoomData['issueId'],
+                              ngoId: chatRoomData['ngoId'],
                             ),
                           ),
                         );
