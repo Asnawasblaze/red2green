@@ -167,23 +167,43 @@ class _DoScreenState extends State<DoScreen> {
   }
 
   void _handleViewChat(IssueModel issue) async {
-    if (issue.eventId == null) return;
-    
-    final chatRoomId = await _databaseService.getChatRoomIdByEvent(issue.eventId!);
-    if (chatRoomId != null && mounted) {
-      Navigator.pop(context);
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatRoomScreen(
-            chatRoomId: chatRoomId,
-            eventId: issue.eventId!,
-            title: 'Cleanup Event',
-            issueId: issue.id,
-            ngoId: issue.claimedByNgoId,
-          ),
+    if (issue.chatRoomId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('No chat room associated with this issue'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
         ),
       );
+      return;
+    }
+    
+    try {
+      if (mounted) {
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatRoomScreen(
+              chatRoomId: issue.chatRoomId!,
+              eventId: issue.eventId!,
+              title: 'Cleanup Event',
+              issueId: issue.id,
+              ngoId: issue.claimedByNgoId,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 

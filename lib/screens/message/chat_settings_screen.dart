@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../../services/database_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../models/user_model.dart';
 import '../../models/issue_model.dart';
 import '../resolve/resolve_issue_screen.dart';
@@ -290,6 +291,10 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                                   
                                   if (result != null && result['success'] == true) {
                                     if (context.mounted) {
+                                      // Refresh chat provider to remove the chat from list
+                                      final userId = currentUser.uid;
+                                      Provider.of<ChatProvider>(context, listen: false).listenToEvents(userId);
+                                      
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
                                           content: Text('Event unclaimed successfully'),

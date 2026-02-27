@@ -28,6 +28,7 @@ class IssueModel {
   final String? claimedByNgoId;
   final String? claimedByNgoName;
   final String? eventId;
+  final String? chatRoomId;
   final DateTime createdAt;
   final DateTime? resolvedAt;
   final List<String> resolvedImages;
@@ -50,6 +51,7 @@ class IssueModel {
     this.claimedByNgoId,
     this.claimedByNgoName,
     this.eventId,
+    this.chatRoomId,
     required this.createdAt,
     this.resolvedAt,
     this.resolvedImages = const [],
@@ -75,6 +77,7 @@ class IssueModel {
       claimedByNgoId: data['claimedByNgoId'],
       claimedByNgoName: data['claimedByNgoName'],
       eventId: data['eventId'],
+      chatRoomId: data['chatRoomId'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       resolvedAt: (data['resolvedAt'] as Timestamp?)?.toDate(),
       resolvedImages: List<String>.from(data['resolvedImages'] ?? []),
@@ -99,6 +102,7 @@ class IssueModel {
       'claimedByNgoId': claimedByNgoId,
       'claimedByNgoName': claimedByNgoName,
       'eventId': eventId,
+      'chatRoomId': chatRoomId,
       'createdAt': Timestamp.fromDate(createdAt),
       'resolvedAt': resolvedAt != null ? Timestamp.fromDate(resolvedAt!) : null,
       'resolvedImages': resolvedImages,
@@ -187,6 +191,7 @@ class IssueModel {
     String? claimedByNgoId,
     String? claimedByNgoName,
     String? eventId,
+    String? chatRoomId,
     DateTime? createdAt,
     DateTime? resolvedAt,
     List<String>? resolvedImages,
@@ -209,6 +214,7 @@ class IssueModel {
       claimedByNgoId: claimedByNgoId ?? this.claimedByNgoId,
       claimedByNgoName: claimedByNgoName ?? this.claimedByNgoName,
       eventId: eventId ?? this.eventId,
+      chatRoomId: chatRoomId ?? this.chatRoomId,
       createdAt: createdAt ?? this.createdAt,
       resolvedAt: resolvedAt ?? this.resolvedAt,
       resolvedImages: resolvedImages ?? this.resolvedImages,

@@ -166,6 +166,7 @@ class DatabaseService {
         'claimedByNgoId': ngoId,
         'claimedByNgoName': ngoName,
         'eventId': eventId,
+        'chatRoomId': chatRoomId,
       });
       
       // Add welcome message to chat
@@ -229,6 +230,7 @@ class DatabaseService {
         'claimedByNgoId': null,
         'claimedByNgoName': null,
         'eventId': null,
+        'chatRoomId': null,
       });
       
       return {'success': true, 'message': 'Event unclaimed successfully'};
