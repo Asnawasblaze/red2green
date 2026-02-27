@@ -9,6 +9,7 @@ import '../../providers/chat_provider.dart';
 import '../../models/models.dart';
 import '../../services/database_service.dart';
 import '../../widgets/event_card_popup.dart';
+import '../message/chat_room_screen.dart';
 
 class DoScreen extends StatefulWidget {
   final LatLng? initialPosition;
@@ -158,17 +159,99 @@ class _DoScreenState extends State<DoScreen> {
             onClose: () => Navigator.pop(context),
             onJoinEvent: () => _handleJoinEvent(issue, userId),
             onClaimEvent: () => _handleClaimEvent(issue, userId, user?.displayName ?? 'NGO'),
+            onViewChat: () => _handleViewChat(issue),
           );
         },
       ),
     );
   }
 
+  void _handleViewChat(IssueModel issue) async {
+    if (issue.eventId == null) return;
+    
+    final chatRoomId = await _databaseService.getChatRoomIdByEvent(issue.eventId!);
+    if (chatRoomId != null && mounted) {
+      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatRoomScreen(
+            chatRoomId: chatRoomId,
+            eventId: issue.eventId!,
+            title: 'Cleanup Event',
+            issueId: issue.id,
+            ngoId: issue.claimedByNgoId,
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> _handleClaimEvent(IssueModel issue, String ngoId, String ngoName) async {
+    final chatNameController = TextEditingController(text: '${issue.title} Cleanup');
+    
+    final chatName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.chat_bubble_outline, color: Color(0xFF059669)),
+            SizedBox(width: 12),
+            Text('Name Chat Room'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Give a name to the chat room for this cleanup event:',
+              style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: chatNameController,
+              decoration: InputDecoration(
+                hintText: 'Enter chat room name',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFF059669)),
+                ),
+              ),
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = chatNameController.text.trim();
+              if (name.isNotEmpty) {
+                Navigator.pop(context, name);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF059669),
+            ),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+
+    if (chatName == null || chatName.isEmpty) return;
+    
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
     try {
-      final result = await _databaseService.claimIssue(issue.id!, ngoId, ngoName);
+      final result = await _databaseService.claimIssue(issue.id!, ngoId, ngoName, chatName: chatName);
       if (result != null && result['success'] == true) {
         await Provider.of<IssueProvider>(context, listen: false).refreshIssues();
         Navigator.pop(context);

@@ -182,7 +182,7 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
               const SizedBox(height: 24),
             ],
 
-            // Mark as Resolved Section (only for NGO who claimed)
+            // Actions Section (only for NGO who claimed)
             if (isNgo && isOwner && widget.issueId != null)
               FutureBuilder(
                 future: _databaseService.getIssueById(widget.issueId!),
@@ -192,9 +192,6 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                   }
                   
                   final issue = snapshot.data!;
-                  if (issue.status == IssueStatus.resolved) {
-                    return const SizedBox.shrink();
-                  }
                   
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,37 +210,124 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                             ),
                           ],
                         ),
-                        child: ListTile(
-                          onTap: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ResolveIssueScreen(
-                                  issue: issue,
-                                  ngoId: currentUser!.uid,
+                        child: Column(
+                          children: [
+                            // Mark as Resolved (only if not resolved)
+                            if (issue.status != IssueStatus.resolved)
+                              ListTile(
+                                onTap: () async {
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ResolveIssueScreen(
+                                        issue: issue,
+                                        ngoId: currentUser!.uid,
+                                      ),
+                                    ),
+                                  );
+                                  if (result == true && context.mounted) {
+                                    Navigator.pop(context, true);
+                                  }
+                                },
+                                leading: CircleAvatar(
+                                  backgroundColor: const Color(0xFF059669).withOpacity(0.1),
+                                  child: const Icon(Icons.check_circle_outline, color: Color(0xFF059669)),
+                                ),
+                                title: const Text(
+                                  'Mark as Resolved',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF059669),
+                                  ),
+                                ),
+                                subtitle: const Text(
+                                  'Upload photos of resolved issue',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                                trailing: const Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
+                              ),
+                            
+                            // Unclaim Event
+                            ListTile(
+                              onTap: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    title: const Row(
+                                      children: [
+                                        Icon(Icons.warning_amber, color: Color(0xFFEF4444)),
+                                        SizedBox(width: 12),
+                                        Text('Unclaim Event'),
+                                      ],
+                                    ),
+                                    content: const Text(
+                                      'Are you sure you want to unclaim this event? This will delete the chat room and event. Volunteers who joined will be removed.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () => Navigator.pop(context, true),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFFEF4444),
+                                        ),
+                                        child: const Text('Unclaim'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                
+                                if (confirm == true && context.mounted) {
+                                  final result = await _databaseService.unclaimIssue(
+                                    widget.issueId!,
+                                    currentUser!.uid,
+                                  );
+                                  
+                                  if (result != null && result['success'] == true) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Event unclaimed successfully'),
+                                          backgroundColor: Color(0xFF059669),
+                                        ),
+                                      );
+                                      Navigator.of(context).popUntil((route) => route.isFirst);
+                                    }
+                                  } else {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(result?['message'] ?? 'Failed to unclaim'),
+                                          backgroundColor: const Color(0xFFEF4444),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                }
+                              },
+                              leading: CircleAvatar(
+                                backgroundColor: const Color(0xFFEF4444).withOpacity(0.1),
+                                child: const Icon(Icons.cancel_outlined, color: Color(0xFFEF4444)),
+                              ),
+                              title: const Text(
+                                'Unclaim Event',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFEF4444),
                                 ),
                               ),
-                            );
-                            if (result == true && context.mounted) {
-                              Navigator.pop(context, true);
-                            }
-                          },
-                          leading: CircleAvatar(
-                            backgroundColor: const Color(0xFF059669).withOpacity(0.1),
-                            child: const Icon(Icons.check_circle_outline, color: Color(0xFF059669)),
-                          ),
-                          title: const Text(
-                            'Mark as Resolved',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF059669),
+                              subtitle: const Text(
+                                'Revoke your claim on this issue',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              trailing: const Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
                             ),
-                          ),
-                          subtitle: const Text(
-                            'Upload photos of resolved issue',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                          trailing: const Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 24),

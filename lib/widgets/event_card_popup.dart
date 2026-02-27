@@ -9,6 +9,7 @@ class EventCardPopup extends StatelessWidget {
   final VoidCallback onClose;
   final VoidCallback? onJoinEvent;
   final VoidCallback? onClaimEvent;
+  final VoidCallback? onViewChat;
 
   const EventCardPopup({
     Key? key,
@@ -18,6 +19,7 @@ class EventCardPopup extends StatelessWidget {
     required this.onClose,
     this.onJoinEvent,
     this.onClaimEvent,
+    this.onViewChat,
   }) : super(key: key);
 
   @override
@@ -289,10 +291,17 @@ class EventCardPopup extends StatelessWidget {
 
   VoidCallback? _getButtonAction() {
     if (userRole == UserRole.ngo) {
-      return onClaimEvent;
+      if (issue.status == IssueStatus.reported) {
+        return onClaimEvent;
+      } else if (issue.status == IssueStatus.claimed && issue.claimedByNgoId == currentUserId) {
+        return onViewChat;
+      }
     } else {
-      return onJoinEvent;
+      if (issue.status == IssueStatus.claimed) {
+        return onJoinEvent;
+      }
     }
+    return null;
   }
 
   Color _getButtonColor() {

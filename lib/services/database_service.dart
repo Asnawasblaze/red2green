@@ -102,7 +102,7 @@ class DatabaseService {
   }
 
   // Claim issue (NGO only) - Creates event and chat room
-  Future<Map<String, dynamic>?> claimIssue(String issueId, String ngoId, String ngoName) async {
+  Future<Map<String, dynamic>?> claimIssue(String issueId, String ngoId, String ngoName, {String? chatName}) async {
     try {
       // Check if already claimed
       final issueDoc = await issuesCollection.doc(issueId).get();
@@ -147,6 +147,7 @@ class DatabaseService {
         'issueId': issueId,
         'ngoId': ngoId,
         'ngoName': ngoName,
+        'title': chatName ?? '${ngoName}\'s Cleanup Event',
         'createdAt': Timestamp.fromDate(DateTime.now()),
         'participants': [ngoId],
         'lastMessage': null,
@@ -189,6 +190,51 @@ class DatabaseService {
     } catch (e) {
       print('Claim issue error: $e');
       return {'success': false, 'message': 'Error claiming event: $e'};
+    }
+  }
+
+  // Unclaim issue (NGO only) - Revoke the claim
+  Future<Map<String, dynamic>?> unclaimIssue(String issueId, String ngoId) async {
+    try {
+      final issueDoc = await issuesCollection.doc(issueId).get();
+      if (!issueDoc.exists) {
+        return {'success': false, 'message': 'Issue not found'};
+      }
+      
+      final issueData = issueDoc.data() as Map<String, dynamic>;
+      final claimedByNgoId = issueData['claimedByNgoId'] as String?;
+      
+      if (claimedByNgoId != ngoId) {
+        return {'success': false, 'message': 'You can only unclaim issues you have claimed'};
+      }
+      
+      final eventId = issueData['eventId'] as String?;
+      if (eventId != null) {
+        // Delete the event
+        await eventsCollection.doc(eventId).delete();
+        
+        // Find and delete the chat room
+        final eventDoc = await eventsCollection.doc(eventId).get();
+        final eventData = eventDoc.data() as Map<String, dynamic>?;
+        final chatRoomId = eventData?['chatRoomId'] as String?;
+        
+        if (chatRoomId != null) {
+          await chatRoomsCollection.doc(chatRoomId).delete();
+        }
+      }
+      
+      // Update issue status back to reported
+      await issuesCollection.doc(issueId).update({
+        'status': 'reported',
+        'claimedByNgoId': null,
+        'claimedByNgoName': null,
+        'eventId': null,
+      });
+      
+      return {'success': true, 'message': 'Event unclaimed successfully'};
+    } catch (e) {
+      print('Unclaim issue error: $e');
+      return {'success': false, 'message': 'Error unclaiming event: $e'};
     }
   }
 
