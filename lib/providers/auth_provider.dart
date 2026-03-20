@@ -137,4 +137,18 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<bool> sendPasswordResetEmail(String email) async {
+    try {
+      setLoading(true);
+      setError(null);
+      await _authService.sendPasswordResetEmail(email);
+      setLoading(false);
+      return true;
+    } catch (e) {
+      setLoading(false);
+      setError(e.toString());
+      return false;
+    }
+  }
 }
