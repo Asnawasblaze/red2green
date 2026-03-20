@@ -16,7 +16,7 @@ void main() async {
 }
 
 class Red2GreenApp extends StatelessWidget {
-  const Red2GreenApp({Key? key}) : super(key: key);
+  const Red2GreenApp({super.key});
 
   @override
   Widget build(BuildContext context) {

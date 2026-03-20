@@ -15,12 +15,12 @@ class ChatSettingsScreen extends StatefulWidget {
   final String? ngoId;
 
   const ChatSettingsScreen({
-    Key? key,
+    super.key,
     required this.chatRoomId,
     required this.currentTitle,
     this.issueId,
     this.ngoId,
-  }) : super(key: key);
+  });
 
   @override
   State<ChatSettingsScreen> createState() => _ChatSettingsScreenState();
@@ -553,7 +553,7 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                 uid == widget.ngoId ? 'NGO/Organizer' : 'Volunteer',
                 style: const TextStyle(fontWeight: FontWeight.w500),
               ),
-              subtitle: Text(uid.toString().substring(0, 8) + '...'),
+              subtitle: Text('${uid.toString().substring(0, 8)}...'),
             )),
             const SizedBox(height: 20),
           ],

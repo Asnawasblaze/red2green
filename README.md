@@ -1,16 +1,37 @@
-# red2green
+# Red2Green
 
-A new Flutter project.
+Red2Green is a community-driven Flutter application for reporting civic cleanliness issues, coordinating NGO-led cleanup events, and enabling volunteer collaboration through realtime event chat.
+
+## Core Features
+- Issue reporting with image capture, location, category, and severity.
+- Realtime issue watch feed with status filters.
+- Map-based event discovery and issue interaction.
+- NGO claim and resolution workflow with proof images.
+- Event-centric group chat for volunteers and organizers.
+
+## Technology Stack
+- Frontend: Flutter + Provider
+- Backend services: Firebase Authentication + Cloud Firestore
+- Media pipeline: Cloudinary image upload
+
+## Documentation
+Production-grade documentation is available under the docs folder:
+- [Frontend Architecture and Delivery](docs/FRONTEND_DOCUMENTATION.md)
+- [Backend Architecture and Operations](docs/BACKEND_DOCUMENTATION.md)
+- [Firestore Schema and Governance](docs/DATABASE_SCHEMA.md)
+- [Security and Compliance Baseline](docs/SECURITY_AND_COMPLIANCE.md)
+- [Operations Runbook](docs/OPERATIONS_RUNBOOK.md)
+- [Deployment and Release Guide](docs/DEPLOYMENT_AND_RELEASE.md)
+- [Documentation Index](docs/README.md)
 
 ## Getting Started
+1. Install Flutter SDK and platform toolchains.
+2. Run dependency installation:
+	- flutter pub get
+3. Configure Firebase for your target platform.
+4. Run the app:
+	- flutter run
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Notes
+- Firebase configuration is loaded from lib/firebase_options.dart.
+- Production hardening should include secure media upload signing and strict Firestore security rules.

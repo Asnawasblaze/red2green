@@ -147,7 +147,7 @@ class DatabaseService {
         'issueId': issueId,
         'ngoId': ngoId,
         'ngoName': ngoName,
-        'title': chatName ?? '${ngoName}\'s Cleanup Event',
+        'title': chatName ?? '$ngoName\'s Cleanup Event',
         'createdAt': Timestamp.fromDate(DateTime.now()),
         'participants': [ngoId],
         'lastMessage': null,

@@ -12,7 +12,7 @@ class IssueDetailPopup extends StatelessWidget {
   final VoidCallback onClose;
 
   const IssueDetailPopup({
-    Key? key,
+    super.key,
     required this.issue,
     required this.userRole,
     required this.currentUserId,
@@ -20,7 +20,7 @@ class IssueDetailPopup extends StatelessWidget {
     this.onJoinEvent,
     this.onClaimEvent,
     required this.onClose,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

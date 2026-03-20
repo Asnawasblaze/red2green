@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/message_model.dart';
-import '../../models/user_model.dart';
 
 class ChatBubble extends StatelessWidget {
   final MessageModel message;
@@ -12,33 +11,32 @@ class ChatBubble extends StatelessWidget {
   final bool isLastMessage;
 
   const ChatBubble({
-    Key? key,
+    super.key,
     required this.message,
     required this.currentUserId,
     this.ngoId,
     this.showAvatar = true,
     this.isFirstMessage = false,
     this.isLastMessage = false,
-  }) : super(key: key);
+  });
 
   bool get isMe => message.senderId == currentUserId || message.senderId == 'system';
-  bool get isNGO => message.senderId == ngoId || message.senderId == 'system';
+  bool get isNGO => message.senderId == ngoId;
   bool get isSystem => message.senderId == 'system';
 
   Color _getSenderColor() {
     if (isSystem) return Colors.grey;
     if (isNGO) return const Color(0xFF059669);
     
-    // Generate color based on sender name
     final colors = [
-      const Color(0xFF6366F1), // Indigo
-      const Color(0xFFEC4899), // Pink
-      const Color(0xFF8B5CF6), // Purple
-      const Color(0xFFF59E0B), // Amber
-      const Color(0xFF10B981), // Emerald
-      const Color(0xFF3B82F6), // Blue
-      const Color(0xFFEF4444), // Red
-      const Color(0xFF14B8A6), // Teal
+      const Color(0xFF6366F1),
+      const Color(0xFFEC4899),
+      const Color(0xFF8B5CF6),
+      const Color(0xFFF59E0B),
+      const Color(0xFF10B981),
+      const Color(0xFF3B82F6),
+      const Color(0xFFEF4444),
+      const Color(0xFF14B8A6),
     ];
     
     int index = message.senderName.hashCode.abs() % colors.length;
@@ -61,149 +59,122 @@ class ChatBubble extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      child: Column(
+        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          if (!isMe && showAvatar) ...[
-            _buildAvatar(),
-            const SizedBox(width: 8),
-          ],
-          if (isMe) const SizedBox(width: 48),
-          
-          Flexible(
-            child: Column(
-              crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                // Sender name (for group chat style)
-                if (showAvatar && !isMe)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 2),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          message.senderName,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: _getSenderColor(),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (isNGO) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF059669),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              'ORG',
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
+          // Sender name for others (not for my messages)
+          if (!isMe && showAvatar)
+            Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    message.senderName,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: _getSenderColor(),
                     ),
                   ),
-                
-                // Message bubble
-                Container(
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.72,
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isMe 
-                        ? const Color(0xFF059669)
-                        : Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(isMe ? 18 : (showAvatar ? 4 : 18)),
-                      topRight: Radius.circular(isMe ? (showAvatar ? 4 : 18) : 18),
-                      bottomLeft: const Radius.circular(18),
-                      bottomRight: const Radius.circular(18),
+                  if (isNGO) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF059669),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        'ORG',
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        message.text,
-                        style: TextStyle(
-                          color: isMe ? Colors.white : Colors.black87,
-                          fontSize: 15.2,
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Timestamp and read status
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, left: 2, right: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _formatTime(message.timestamp),
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                      if (isMe) ...[
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.done_all,
-                          size: 14,
-                          color: Colors.grey[400],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+                  ],
+                ],
+              ),
             ),
-          ),
           
-          if (!isMe) const SizedBox(width: 48),
+          // Message bubble
+          Row(
+            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Avatar for others
+              if (!isMe && showAvatar) ...[
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: _getSenderColor().withOpacity(0.15),
+                  child: Text(
+                    _getInitials(message.senderName),
+                    style: TextStyle(
+                      color: _getSenderColor(),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              
+              // Spacer for my messages to align right
+              if (isMe) const Spacer(),
+              
+              // Bubble
+              Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.75,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isMe ? const Color(0xFF059669) : const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(16),
+                    topRight: const Radius.circular(16),
+                    bottomLeft: isMe ? const Radius.circular(16) : (showAvatar ? const Radius.circular(4) : const Radius.circular(16)),
+                    bottomRight: isMe ? (showAvatar ? const Radius.circular(4) : const Radius.circular(16)) : const Radius.circular(16),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      message.text,
+                      style: TextStyle(
+                        color: isMe ? Colors.white : Colors.black87,
+                        fontSize: 15.2,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatTime(message.timestamp),
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: isMe ? Colors.white70 : Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Spacer for others to align left
+              if (!isMe) const Spacer(),
+            ],
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAvatar() {
-    return CircleAvatar(
-      radius: 16,
-      backgroundColor: _getSenderColor().withOpacity(0.15),
-      child: Text(
-        _getInitials(message.senderName),
-        style: TextStyle(
-          color: _getSenderColor(),
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-        ),
       ),
     );
   }
 
   Widget _buildSystemMessage() {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
       child: Center(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -214,7 +185,7 @@ class ChatBubble extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.info_outline, size: 14, color: Color(0xFF6B7280)),
+              const Icon(Icons.info_outline, size: 13, color: Color(0xFF6B7280)),
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
@@ -234,16 +205,6 @@ class ChatBubble extends StatelessWidget {
   }
 
   String _formatTime(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final messageDate = DateTime(date.year, date.month, date.day);
-    
-    if (messageDate == today) {
-      return DateFormat('h:mm a').format(date);
-    } else if (messageDate == today.subtract(const Duration(days: 1))) {
-      return 'Yesterday ${DateFormat('h:mm a').format(date)}';
-    } else {
-      return DateFormat('MMM d, h:mm a').format(date);
-    }
+    return DateFormat('h:mm a').format(date);
   }
 }

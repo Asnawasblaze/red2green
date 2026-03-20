@@ -5,7 +5,7 @@ import '../home/home_screen.dart';
 import 'login_screen.dart';
 
 class NGORegisterScreen extends StatefulWidget {
-  const NGORegisterScreen({Key? key}) : super(key: key);
+  const NGORegisterScreen({super.key});
 
   @override
   State<NGORegisterScreen> createState() => _NGORegisterScreenState();
@@ -368,9 +368,9 @@ class _NGORegisterScreenState extends State<NGORegisterScreen> {
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
                               )
-                            : Row(
+                            : const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
+                                children: [
                                   Icon(Icons.shield_outlined, size: 20),
                                   SizedBox(width: 8),
                                   Text('Verify & Register', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),

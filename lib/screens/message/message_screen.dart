@@ -7,7 +7,7 @@ import '../../services/database_service.dart';
 import 'chat_room_screen.dart';
 
 class MessageScreen extends StatefulWidget {
-  const MessageScreen({Key? key}) : super(key: key);
+  const MessageScreen({super.key});
 
   @override
   State<MessageScreen> createState() => _MessageScreenState();

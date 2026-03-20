@@ -11,7 +11,7 @@ import '../../services/cloudinary_service.dart';
 import '../home/home_screen.dart';
 
 class PostScreen extends StatefulWidget {
-  const PostScreen({Key? key}) : super(key: key);
+  const PostScreen({super.key});
 
   @override
   State<PostScreen> createState() => _PostScreenState();
@@ -464,7 +464,7 @@ class _PostScreenState extends State<PostScreen> {
                           Switch(
                             value: _isAnonymous,
                             onChanged: isDisabled ? null : (value) => setState(() => _isAnonymous = value),
-                            activeColor: const Color(0xFF059669),
+                            activeThumbColor: const Color(0xFF059669),
                           ),
                         ],
                       ),

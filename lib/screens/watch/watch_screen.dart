@@ -5,7 +5,7 @@ import '../../providers/issue_provider.dart';
 import '../../widgets/issue_card.dart';
 
 class WatchScreen extends StatefulWidget {
-  const WatchScreen({Key? key}) : super(key: key);
+  const WatchScreen({super.key});
 
   @override
   State<WatchScreen> createState() => _WatchScreenState();

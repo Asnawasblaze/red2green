@@ -12,7 +12,7 @@ class EventCardPopup extends StatelessWidget {
   final VoidCallback? onViewChat;
 
   const EventCardPopup({
-    Key? key,
+    super.key,
     required this.issue,
     required this.userRole,
     required this.currentUserId,
@@ -20,7 +20,7 @@ class EventCardPopup extends StatelessWidget {
     this.onJoinEvent,
     this.onClaimEvent,
     this.onViewChat,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

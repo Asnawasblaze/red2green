@@ -4,7 +4,7 @@ import 'register_screen.dart';
 import 'ngo_register_screen.dart';
 
 class GatewayScreen extends StatelessWidget {
-  const GatewayScreen({Key? key}) : super(key: key);
+  const GatewayScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -93,9 +93,9 @@ class GatewayScreen extends StatelessWidget {
                   elevation: 2,
                   shadowColor: const Color(0xFF059669).withOpacity(0.3),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Icon(Icons.person_outline, size: 22),
                     SizedBox(width: 10),
                     Text(
@@ -123,9 +123,9 @@ class GatewayScreen extends StatelessWidget {
                   ),
                   side: const BorderSide(color: Color(0xFF059669), width: 2),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Icon(Icons.business_outlined, size: 22),
                     SizedBox(width: 10),
                     Text(

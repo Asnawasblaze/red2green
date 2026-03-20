@@ -4,7 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -157,13 +157,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: 'you@example.com',
-                    prefixIcon: const Padding(
+                    prefixIcon: Padding(
                       padding: EdgeInsets.only(left: 16, right: 12),
                       child: Icon(Icons.mail_outline, color: Color(0xFF9CA3AF), size: 20),
                     ),
-                    prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                    prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
                   ),
                   validator: (value) =>
                       value?.isEmpty ?? true ? 'Please enter your email' : null,

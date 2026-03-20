@@ -12,10 +12,10 @@ class ResolveIssueScreen extends StatefulWidget {
   final String ngoId;
 
   const ResolveIssueScreen({
-    Key? key,
+    super.key,
     required this.issue,
     required this.ngoId,
-  }) : super(key: key);
+  });
 
   @override
   State<ResolveIssueScreen> createState() => _ResolveIssueScreenState();
@@ -86,8 +86,8 @@ class _ResolveIssueScreenState extends State<ResolveIssueScreen> {
   Future<void> _resolveIssue() async {
     if (_selectedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please add at least one photo of the resolved issue'),
+        const SnackBar(
+          content: Text('Please add at least one photo of the resolved issue'),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
         ),
@@ -124,8 +124,8 @@ class _ResolveIssueScreenState extends State<ResolveIssueScreen> {
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Issue marked as resolved!'),
+            const SnackBar(
+              content: Text('Issue marked as resolved!'),
               backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
             ),

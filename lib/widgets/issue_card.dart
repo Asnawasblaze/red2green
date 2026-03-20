@@ -8,7 +8,7 @@ import '../providers/issue_provider.dart';
 class IssueCard extends StatelessWidget {
   final IssueModel issue;
 
-  const IssueCard({Key? key, required this.issue}) : super(key: key);
+  const IssueCard({super.key, required this.issue});
 
   Color _getStatusColor() {
     switch (issue.status) {

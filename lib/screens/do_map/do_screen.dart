@@ -14,7 +14,7 @@ import '../message/chat_room_screen.dart';
 class DoScreen extends StatefulWidget {
   final LatLng? initialPosition;
   
-  const DoScreen({Key? key, this.initialPosition}) : super(key: key);
+  const DoScreen({super.key, this.initialPosition});
 
   @override
   State<DoScreen> createState() => _DoScreenState();
@@ -169,8 +169,8 @@ class _DoScreenState extends State<DoScreen> {
   void _handleViewChat(IssueModel issue) async {
     if (issue.chatRoomId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('No chat room associated with this issue'),
+        const SnackBar(
+          content: Text('No chat room associated with this issue'),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
         ),

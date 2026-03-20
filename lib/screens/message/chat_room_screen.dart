@@ -20,14 +20,14 @@ class ChatRoomScreen extends StatefulWidget {
   final String? ngoId;
 
   const ChatRoomScreen({
-    Key? key,
+    super.key,
     required this.chatRoomId,
     required this.eventId,
     required this.title,
     this.meetingPoint,
     this.issueId,
     this.ngoId,
-  }) : super(key: key);
+  });
 
   @override
   State<ChatRoomScreen> createState() => _ChatRoomScreenState();
@@ -215,54 +215,91 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ),
           ),
           
-          // Meeting Point Banner
-          if (widget.meetingPoint != null && widget.meetingPoint!.isNotEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
-                color: Color(0xFFFEF3C7),
-                border: Border(
-                  bottom: BorderSide(color: Color(0xFFFDE68A), width: 1),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFDE68A),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.push_pin, color: Color(0xFFD97706), size: 16),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Meeting Point',
-                          style: TextStyle(
-                            color: Color(0xFFD97706),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.meetingPoint!,
-                          style: TextStyle(
-                            color: Colors.amber[900],
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
+          // Meeting Point & Scheduled Time Banner
+          if (widget.eventId.isNotEmpty)
+            FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance.collection('events').doc(widget.eventId).get(),
+              builder: (context, eventSnapshot) {
+                final meetingPoint = widget.meetingPoint;
+                DateTime? scheduledTime;
+                if (eventSnapshot.hasData && eventSnapshot.data != null) {
+                  final eventData = eventSnapshot.data!.data() as Map<String, dynamic>?;
+                  if (eventData != null && eventData['scheduledTime'] != null) {
+                    scheduledTime = (eventData['scheduledTime'] as Timestamp).toDate();
+                  }
+                }
+                
+                if (meetingPoint == null && scheduledTime == null) {
+                  return const SizedBox.shrink();
+                }
+                
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFEF3C7),
+                    border: Border(
+                      bottom: BorderSide(color: Color(0xFFFDE68A), width: 1),
                     ),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFDE68A),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.push_pin, color: Color(0xFFD97706), size: 18),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (meetingPoint != null && meetingPoint.isNotEmpty) ...[
+                              const Text(
+                                'Meeting Point',
+                                style: TextStyle(
+                                  color: Color(0xFFD97706),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                meetingPoint,
+                                style: TextStyle(
+                                  color: Colors.amber[900],
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                            if (scheduledTime != null) ...[
+                              if (meetingPoint != null && meetingPoint.isNotEmpty) const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(Icons.schedule, color: Color(0xFFD97706), size: 14),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Scheduled: ${_formatScheduledTime(scheduledTime)}',
+                                    style: TextStyle(
+                                      color: Colors.amber[900],
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           
           // Messages List
@@ -281,6 +318,18 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   return Center(child: Text('Error: ${snapshot.error}'));
                 }
                 final messages = snapshot.data ?? [];
+                
+                // Auto-scroll to bottom when new messages arrive
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_scrollController.hasClients) {
+                    _scrollController.animateTo(
+                      _scrollController.position.maxScrollExtent,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  }
+                });
+                
                 if (messages.isEmpty) {
                   return Center(
                     child: Column(
@@ -317,7 +366,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 }
                 return ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
@@ -430,5 +479,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         ],
       ),
     );
+  }
+
+  String _formatScheduledTime(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final scheduledDate = DateTime(date.year, date.month, date.day);
+    
+    String timeStr = DateFormat('h:mm a').format(date);
+    
+    if (scheduledDate == today) {
+      return 'Today at $timeStr';
+    } else if (scheduledDate == today.add(const Duration(days: 1))) {
+      return 'Tomorrow at $timeStr';
+    } else {
+      return '${DateFormat('MMM d').format(date)} at $timeStr';
+    }
   }
 }
