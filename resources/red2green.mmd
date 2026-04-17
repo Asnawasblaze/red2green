@@ -1,0 +1,92 @@
+sequenceDiagram
+    autonumber
+    
+    actor User as User (NGO/Volunteer/Public)
+    participant App as Flutter App
+    participant Auth as Firebase Auth
+    participant Maps as Google Maps API
+    participant Storage as Firebase Storage
+    participant DB as Firestore DB
+    participant Cloud as Cloud Functions
+    participant Darpan as NGO Darpan API
+
+    rect rgb(255, 245, 210)
+        Note over User, Darpan: 🟡 PHASE 1: NGO ONBOARDING & VERIFICATION
+        User->>App: Sign up with Email + UIN Input
+        App->>Auth: createUserWithEmailAndPassword()
+        Auth-->>App: Return User UID
+        App->>Cloud: HTTP Call: verifyNGO(UID, UIN)
+        Cloud->>Darpan: GET /check_uin?id={UIN}
+        Darpan-->>Cloud: Response: { valid: true, org_name: "GreenEarth" }
+        
+        alt UIN is Valid
+            Cloud->>DB: Update User Document: isVerified = true
+            Cloud-->>App: Success (HTTP 200)
+            App->>User: "Account Verified! You can now Claim issues."
+        else UIN is Invalid
+            Cloud-->>App: Error (HTTP 400)
+            App->>User: "Verification Failed. Upload Docs manually."
+        end
+    end
+
+    rect rgb(230, 245, 255)
+        Note over User, Darpan: 🔵 PHASE 2: REPORTING AN ISSUE (POST)
+        User->>App: Take Photo & Confirm Location
+        App->>Maps: getCurrentPosition()
+        Maps-->>App: Return Lat/Lng coordinates
+        App->>Storage: Upload image file (JPEG)
+        Storage-->>App: Return download URL
+        User->>App: Submit Report (Category + Metric)
+        App->>DB: Write to 'issues' collection
+        Note right of DB: Data: {status: 'reported', geo: [lat, lng], photo: url}
+        DB-->>App: Write successful
+        
+        par Real-time Update
+            DB-->>App: Firestore Listener triggers UI update
+            App-->>User: Feed refreshes with new report (WATCH Tab)
+        end
+    end
+
+    rect rgb(240, 255, 240)
+        Note over User, Darpan: 🟢 PHASE 3: NGO CLAIMING & COORDINATION (DO)
+        User->>App: (NGO) Clicks "CLAIM ISSUE"
+        App->>DB: Transaction: Update issue status to 'claimed'
+        
+        Note over Cloud: ⚡ Backend Trigger (Cloud Function)
+        DB->>Cloud: onUpdate(issue) trigger activated
+        Cloud->>DB: Create 'chat_rooms' document
+        Cloud->>DB: Create 'events' document
+        
+        App-->>User: Show Event Scheduler
+        User->>App: (NGO) Sets Date/Time/Meeting Point
+        App->>DB: Update 'events' document
+
+        Note over User, App: --- Volunteer Flow ---
+        User->>App: (Volunteer) Clicks "JOIN CLEANUP"
+        App->>DB: Update 'events' (add Vol_ID to participants)
+        App->>DB: Update 'chat_rooms' (allow Vol_ID read/write)
+        App-->>User: Chatroom access granted
+    end
+
+    rect rgb(255, 235, 245)
+        Note over User, Darpan: 🟣 PHASE 4: REAL-TIME CHAT (MESSAGE)
+        User->>App: Sends Message "I'm bringing gloves!"
+        App->>DB: Add doc to 'chat_rooms/{id}/messages'
+        DB-->>App: Stream<QuerySnapshot> updates all clients
+        App-->>User: UI shows new bubble instantly (< 1 second)
+        Note over App, DB: Real-time sync via .snapshots() listener
+    end
+
+    rect rgb(245, 250, 230)
+        Note over User, Darpan: 🟡 PHASE 5: RESOLUTION & COMPLETION
+        User->>App: (NGO) Clicks "MARK AS RESOLVED"
+        App->>DB: Update Issue Status to 'resolved'
+        
+        Note over Cloud: ⚡ Cleanup Trigger (Cloud Function)
+        DB->>Cloud: onUpdate(status='resolved') trigger
+        Cloud->>DB: Update 'chat_rooms' (is_archived: true)
+        Cloud->>Cloud: Send FCM Push Notification to Volunteers
+        
+        DB-->>App: Update Map Pin to Green
+        App-->>User: "Great job! Event Closed. 🎉"
+    end
